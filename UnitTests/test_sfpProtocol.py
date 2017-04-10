@@ -8,7 +8,8 @@ import pids
 sp = sfpProtocol()
 
 # build a test frame
-packet = [pids.MEMORY] + list(range(5))
+payload =  list(range(5))
+packet = [pids.MEMORY] + payload
 length = 1 + len(packet) + 2
 frame = [length, ~length&0xFF] + packet
 sum = sumsum = 0
@@ -130,7 +131,15 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.handler.get(pids.MEMORY), None)
 
     def test_distributer(self):
-        self.fail()
+        handled = False
+        sp.rxBytes(frame)
+        def handler(packet):
+            self.assertEqual(packet, payload)
+            handled = True
+        sp.setHandler(pids.MEMORY, handler)
+        sp.distributer()
+        self.assertTrue(handled)
+        self.assertResult(sp.result, NO_ERROR)
 
     def test_sendNPS(self):
         sp.sendNPS(pids.MEMORY, packet[1:])
@@ -138,4 +147,5 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.transmitPool.get(), frame)
 
     def test_txBytes(self):
-        self.fail()
+        sp.sendNPS(pids.MEMORY, packet[1:])
+        self.assertEqual(sp.txBytes(), frame)
