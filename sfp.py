@@ -8,7 +8,7 @@
 
 import time, Queue
 from collections import deque
-from pids import MAX_FRAME_LENGTH, SFP_FRAME_TIME, pids
+from pids import MAX_FRAME_LENGTH, SFP_FRAME_TIME, pids, PID_BITS
 from sfpErrors import *
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |
@@ -90,14 +90,17 @@ class sfpProtocol:
 
 		self.sfpState = self.hunting
 		if self.frameOk():
-			if self.VERBOSE:
-				self.note(GOOD_FRAME,"host: good frame")
-
 			frame = list(self.frame) # convert to list for slicing
-			self.receivedPool.put(frame[1:self.length - CHECKSUM_LENGTH])
 			self.frame.clear()
 			self.frame.extend(frame[self.length:])
-			self.newPacket()
+
+			if frame[1] & ~PID_BITS: # ignore SPS frames since not supported
+				self.result = IGNORE_FRAME
+			else:
+				if self.VERBOSE:
+					self.note(GOOD_FRAME, "host: good frame")
+				self.receivedPool.put(frame[1:self.length - CHECKSUM_LENGTH])
+				self.newPacket()
 		else:
 			self.error(BAD_CHECKSUM,"host: bad checksum")
 		return True

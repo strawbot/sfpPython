@@ -25,6 +25,7 @@ for byte in frame:
     sumsum += sum
 frame += [sum&0xFF, sumsum&0xFF]
 reference = [0x07, 0xF8, 0x07, 0x00, 0x02, 0x6A, 0x72, 0x8C]
+spsframe = [0x06, 0xF9, 0x82, 0x00, 0x01, 0x82, 0x89]
 
 class TestSfpProtocol(TestCase):
     def setUp(self):
@@ -35,6 +36,8 @@ class TestSfpProtocol(TestCase):
         sp.receivedPool.queue.clear()
         sp.transmitPool.queue.clear()
         sp.handler.clear()
+        sp.gotFrame = False
+        sp.gotPacket = False
 
     def test_rxBytes(self):
         self.assertEqual(sp.receivedPool.qsize(), 0)
@@ -102,6 +105,11 @@ class TestSfpProtocol(TestCase):
         self.assertTrue(sp.receiving())
         self.assertEqual(sp.result, GOOD_FRAME)
 
+        self.setUp()
+        sp.length = spsframe[0]
+        sp.frame.extend(spsframe[1:])
+        self.assertTrue(sp.receiving())
+        self.assertEqual(sp.result, IGNORE_FRAME)
 
     def test_resetRx(self):
         sp.sfpState = None
@@ -151,16 +159,25 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.handler.get(pids.MEMORY), None)
 
     def test_distributer(self):
-        self.handled = False
-        sp.rxBytes(frame)
         def handler(packet):
             self.assertEqual(packet, payload)
             self.handled = True
         sp.setHandler(pids.MEMORY, handler)
+
+        self.handled = False
+        sp.rxBytes(frame)
         sp.distributer()
         self.assertTrue(self.handled)
         self.assertEqual(sp.result, GOOD_FRAME)
         self.assertEqual(sp.gotPacket, True)
+
+        self.setUp()
+        self.handled = False
+        sp.rxBytes(spsframe)
+        sp.distributer()
+        self.assertFalse(self.handled)
+        self.assertEqual(sp.result, IGNORE_FRAME)
+        self.assertEqual(sp.gotPacket, False)
 
     def test_sendNPS(self):
         sp.sendNPS(pids.MEMORY, packet[1:])
