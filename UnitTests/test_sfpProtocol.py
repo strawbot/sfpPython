@@ -5,7 +5,14 @@ from sfpErrors import *
 from pids import MAX_FRAME_LENGTH
 import pids
 
-sp = sfpProtocol()
+class sfpPlus(sfpProtocol):
+    def newPacket(self):
+        self.gotPacket = True
+
+    def newFrame(self):
+        self.gotFrame = True
+
+sp = sfpPlus()
 
 # build a test frame
 payload =  list(range(5))
@@ -24,11 +31,12 @@ class TestSfpProtocol(TestCase):
         sp.result = NO_ERROR
         sp.message = ""
         sp.VERBOSE = True
-
-    def fail(self):
-        pass
+        sp.receivedPool.queue.clear()
+        sp.transmitPool.queue.clear()
+        sp.handler.clear()
 
     def test_rxBytes(self):
+        self.assertEqual(sp.receivedPool.qsize(), 0)
         sp.rxBytes(frame)
         self.assertEqual(sp.receivedPool.qsize(), 1)
 
@@ -78,10 +86,19 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.sfpState, sp.receiving)
 
     def test_receiving(self):
-        sp.length = 5
+        sp.length = frame[0]
         self.assertFalse(sp.receiving())
 
-        self.fail()
+        sp.frame.extend(frame[1:-1] + [~frame[-1]&0xFF])
+        self.assertTrue(sp.receiving())
+        self.assertEqual(sp.result, BAD_CHECKSUM)
+
+        self.setUp()
+        sp.length = frame[0]
+        sp.frame.extend(frame[1:])
+        self.assertTrue(sp.receiving())
+        self.assertEqual(sp.result, GOOD_FRAME)
+
 
     def test_resetRx(self):
         sp.sfpState = None
@@ -131,20 +148,22 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.handler.get(pids.MEMORY), None)
 
     def test_distributer(self):
-        handled = False
+        self.handled = False
         sp.rxBytes(frame)
         def handler(packet):
             self.assertEqual(packet, payload)
-            handled = True
+            self.handled = True
         sp.setHandler(pids.MEMORY, handler)
         sp.distributer()
-        self.assertTrue(handled)
-        self.assertResult(sp.result, NO_ERROR)
+        self.assertTrue(self.handled)
+        self.assertEqual(sp.result, GOOD_FRAME)
+        self.assertEqual(sp.gotPacket, True)
 
     def test_sendNPS(self):
         sp.sendNPS(pids.MEMORY, packet[1:])
         self.assertEqual(sp.transmitPool.qsize(), 1)
         self.assertEqual(sp.transmitPool.get(), frame)
+        self.assertEqual(sp.gotFrame, True)
 
     def test_txBytes(self):
         sp.sendNPS(pids.MEMORY, packet[1:])
