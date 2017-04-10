@@ -15,7 +15,7 @@ class sfpPlus(sfpProtocol):
 sp = sfpPlus()
 
 # build a test frame
-payload =  list(range(5))
+payload =  list(range(50))
 packet = [pids.MEMORY] + payload
 length = 1 + len(packet) + 2
 frame = [length, ~length&0xFF] + packet
@@ -24,6 +24,7 @@ for byte in frame:
     sum += byte
     sumsum += sum
 frame += [sum&0xFF, sumsum&0xFF]
+reference = [0x07, 0xF8, 0x07, 0x00, 0x02, 0x6A, 0x72, 0x8C]
 
 class TestSfpProtocol(TestCase):
     def setUp(self):
@@ -39,6 +40,8 @@ class TestSfpProtocol(TestCase):
         self.assertEqual(sp.receivedPool.qsize(), 0)
         sp.rxBytes(frame)
         self.assertEqual(sp.receivedPool.qsize(), 1)
+        sp.rxBytes(reference)
+        self.assertEqual(sp.receivedPool.qsize(), 2)
 
     def test_hunting(self):
         self.assertFalse(sp.hunting())
