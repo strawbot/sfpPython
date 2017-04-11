@@ -44,6 +44,9 @@ class sfpProtocol:
 
 	# receiver: frame contains received bytes and is parsed for a frame
 	def rxBytes(self, bytes):  # run rx state machine receiver
+		if self.VERBOSE:
+			self.dump('RX: ', bytes)
+
 		if self.frame and (time.time() - self.frameTime) > SFP_FRAME_TIME:
 			self.error(FRAME_TIMEOUT,"Frame timeout - resetting receiver")
 			self.resetRx()
