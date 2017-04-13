@@ -28,7 +28,7 @@ MIN_SFP_SIZE = (LENGTH_LENGTH + MIN_FRAME_LENGTH)
 FRAME_OVERHEAD = (MIN_FRAME_LENGTH - PID_LENGTH)
 
 # protocol class
-class sfpProtocol:
+class sfpProtocol(object):
 	VERBOSE = 0	 # set to non zero for debugging
 
 	def __init__(self):
