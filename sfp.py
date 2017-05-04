@@ -40,12 +40,14 @@ class sfpProtocol(object):
 		self.receivedPool = Queue.Queue()  # holds received frames
 		self.transmitPool = Queue.Queue()  # holds outgoing frames
 		self.handler = {}  # for associating handlers with PIDs
+		self.setHandler(pids.SPS, self.spsHandler)
 		self.frame = deque() # incoming data
 		self.sfpState = self.hunting  # receive states: hunting, syncing, receiving
 		self.frameTime = time.time()  # to know when data is stale
 		self.length = 0
 		self.result = NO_ERROR
 		self.message = ""
+		self.spsbitExpect = None
 		self.frameTimeout = pids.SFP_FRAME_TIME
 
 	# receiver: frame contains received bytes and is parsed for a frame
@@ -105,13 +107,10 @@ class sfpProtocol(object):
 			self.frame.clear()
 			self.frame.extend(frame[self.length:])
 
-				self.result = IGNORE_FRAME
 			if frame[1] & ~pids.PID_BITS:
+				self.spsFrame(frame)
 			else:
-				if self.VERBOSE:
-					self.note(GOOD_FRAME, "host: good frame")
-				self.receivedPool.put(frame[1:self.length - CHECKSUM_LENGTH])
-				self.newPacket()
+				self.goodFrame(frame)
 		else:
 			self.error(BAD_CHECKSUM,"host: bad checksum")
 		return True
@@ -154,6 +153,24 @@ class sfpProtocol(object):
 			sumsum += sum
 		return (sum & 0xFF), (sumsum & 0xFF)
 
+	# frame handlers
+	def goodFrame(self, frame):
+		if self.VERBOSE:
+			self.note(GOOD_FRAME, "host: good frame")
+		self.receivedPool.put(frame[1:self.length - CHECKSUM_LENGTH])
+		self.newPacket()
+
+	# SPS Frame: if ACK_BIT set, send an ack; if SPS_BIT is not expected, ignore frame
+	def spsFrame(self, frame):
+		self.sendNPS(pids.SPS_ACK)
+		spsbit = frame[1] & pids.SPS_BIT
+		if spsbit == self.spsbitExpect or self.spsbitExpect == None:
+			self.spsbitExpect = spsbit ^ pids.SPS_BIT
+			frame[1] &= pids.PID_BITS
+			self.goodFrame(frame)
+		else:
+			self.result = IGNORE_FRAME
+
 	# packet handlers
 	def newPacket(self):  # redefine to receive packets
 		pass
@@ -169,6 +186,9 @@ class sfpProtocol(object):
 				self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[packet[0]], packet[0]))
 			else:
 				self.dump("Error: unknown packet: 0x%x " % (packet[0]), packet)
+
+	def spsHandler(self, packet):
+		pass
 
 	def setHandler(self, pid, handler):  # route packets to handler
 		self.handler[pid] = handler
