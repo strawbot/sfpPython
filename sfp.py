@@ -170,7 +170,7 @@ class sfpProtocol(object):
 			self.handler.pop(pid)
 
 	# sending SFP frames
-	def sendNPS(self, pid, payload):  # send a payload via normal packet service
+	def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
 		length = len(payload) + FRAME_OVERHEAD + 1	 # pid is separate from payload
 		sync = ~length & 0xff
 		frame = [length, sync, pid] + payload
