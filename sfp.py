@@ -46,14 +46,17 @@ class sfpProtocol(object):
 		self.length = 0
 		self.result = NO_ERROR
 		self.message = ""
+		self.frameTimeout = pids.SFP_FRAME_TIME
 
 	# receiver: frame contains received bytes and is parsed for a frame
 	def rxBytes(self, bytes):  # run rx state machine receiver
 		if self.VERBOSE:
 			self.dump('RX: ', bytes)
 
-		if self.frame and (time.time() - self.frameTime) > SFP_FRAME_TIME:
+		if self.frame and (time.time() - self.frameTime) > self.frameTimeout:
+			self.frameTimeout += self.frameTimeout
 			self.error(FRAME_TIMEOUT,"Frame timeout - resetting receiver")
+			self.note("doubling timeout to %d"%self.frameTimeout)
 			self.resetRx()
 		else:
 			self.frame.extend(bytes)
