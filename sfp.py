@@ -13,7 +13,7 @@ if sys.version_info > (3, 0):
 else:
 	import Queue
 from collections import deque
-from pids import MAX_FRAME_LENGTH, SFP_FRAME_TIME, pids, PID_BITS
+import pids
 from sfpErrors import *
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |
@@ -28,7 +28,7 @@ CHECKSUM_LENGTH = 2
 
 # defines - lengths in bytes
 MIN_FRAME_LENGTH = (SYNC_LENGTH + PID_LENGTH + CHECKSUM_LENGTH)
-MAX_SFP_SIZE = (LENGTH_LENGTH + MAX_FRAME_LENGTH)
+MAX_SFP_SIZE = (LENGTH_LENGTH + pids.MAX_FRAME_LENGTH)
 MIN_SFP_SIZE = (LENGTH_LENGTH + MIN_FRAME_LENGTH)
 FRAME_OVERHEAD = (MIN_FRAME_LENGTH - PID_LENGTH)
 
@@ -102,8 +102,8 @@ class sfpProtocol(object):
 			self.frame.clear()
 			self.frame.extend(frame[self.length:])
 
-			if frame[1] & ~PID_BITS: # ignore SPS frames since not supported
 				self.result = IGNORE_FRAME
+			if frame[1] & ~pids.PID_BITS:
 			else:
 				if self.VERBOSE:
 					self.note(GOOD_FRAME, "host: good frame")
@@ -123,7 +123,7 @@ class sfpProtocol(object):
 		self.resetRx()
 
 	def checkLength(self):
-		if MIN_FRAME_LENGTH <= self.length <= MAX_FRAME_LENGTH:
+		if MIN_FRAME_LENGTH <= self.length <= pids.MAX_FRAME_LENGTH:
 			return LENGTH_OK
 
 		if self.length == 0 or self.length == 0xFF:
@@ -162,8 +162,8 @@ class sfpProtocol(object):
 			handler = self.handler.get(pid)
 			if handler:
 				handler(packet[1:])
-			elif pids.get(packet[0]):
-				self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids[packet[0]], packet[0]))
+			elif pids.pids.get(packet[0]):
+				self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[packet[0]], packet[0]))
 			else:
 				self.dump("Error: unknown packet: 0x%x " % (packet[0]), packet)
 
