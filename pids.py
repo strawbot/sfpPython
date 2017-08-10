@@ -14,6 +14,7 @@ EVAL=0x9	# evaluate text with destination; who, text
 CALL_CODE=0xa	# call code starting at this location; who, addr32
 MEMORY=0xb	# use for memory transactions: read/write/erase/confirm...
 FILES=0xc	# user for file transactions: read/write/delete/...
+AT_CMD=0xd # pass through for talking to embedded AT modems
 MAX_PIDS=0xd	# number of PIDS defined
 
 pids = {
@@ -30,6 +31,7 @@ pids = {
 	CALL_CODE:"CALL_CODE",	# call code starting at this location; who, addr32
 	MEMORY:"MEMORY",	# use for memory transactions: read/write/erase/confirm...
 	FILES:"FILES",	# user for file transactions: read/write/delete/...
+	AT_CMD:"AT_CMD", # pass through for talking to embedded AT modems
 	MAX_PIDS:"MAX_PIDS"	# number of PIDS defined
 }
 
