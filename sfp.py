@@ -49,6 +49,7 @@ class sfpProtocol(object):
 		self.message = ""
 		self.spsbitExpect = None
 		self.frameTimeout = pids.SFP_FRAME_TIME
+		self.displayUnknowns = True
 
 	# receiver: frame contains received bytes and is parsed for a frame
 	def rxBytes(self, bytes):  # run rx state machine receiver
@@ -182,10 +183,11 @@ class sfpProtocol(object):
 			handler = self.handler.get(pid)
 			if handler:
 				handler(packet[1:])
-			elif pids.pids.get(packet[0]):
-				self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[packet[0]], packet[0]))
-			else:
-				self.dump("Error: unknown packet: 0x%x " % (packet[0]), packet)
+			elif self.displayUnknowns:
+				if pids.pids.get(packet[0]):
+					self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[packet[0]], packet[0]))
+				else:
+					self.dump("Error: unknown packet: 0x%x " % (packet[0]), packet)
 
 	def spsHandler(self, packet):
 		pass
