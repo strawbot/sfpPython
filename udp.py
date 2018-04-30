@@ -1,25 +1,50 @@
+# Host UDP server
+
 import socket
-import sys
-import time
 
 # Create a UDP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def newSock(address, timeout=0.001):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.settimeout(timeout)
+    sock.bind(address)
+    return sock
 
-server_address = ('192.168.19.1', 1961)
-message = 'This is the message. It will be repeated.\n'
+ip = '192.168.0.112'
+port = 1961
+ip = '192.168.2.1'
+ip = ''
+address = (ip, port)
+
+drawer = []
+drawer.append(newSock(address, .1))
 
 try:
+    while True:
+        i = 0
+        while i < len(drawer):
+            try:
+                sock = drawer[i]
+                data, address = sock.recvfrom(256)  # buffer size is 256 bytes
+                print "address:", address, "received message:", data
+                if i == 0:
+                    message = 'This is the welcome message.\n'
+                    sock = newSock(('',address[1]))
+                    drawer.append(sock)
+                    print len(drawer), "socks in drawer"
+                else:
+                    message = 'This is the final message.\n'
+                sock.sendto(message, address)
 
-    # Send data
-    # print >>sys.stderr, 'sending "%s"' % message
-    print sock.sendto(message, server_address)
-#
-    # time.sleep(5)
-    # # Receive response
-    # print >>sys.stderr, 'waiting to receive'
-    # data, server = sock.recvfrom(10000)
-    # print >>sys.stderr, 'received "%s"' % data
+            except socket.timeout:
+                pass
+            i += 1
 
 finally:
-    # print >>sys.stderr, 'closing socket'
-    sock.close()
+    for sock in drawer:
+        sock.close()
+
+'''
+each time a packet comes in on port 1961, it spawns a thread and a new socket assigned to the port that it
+came in on. The thread sits and waits for an initial packet and answers it when it comes in. Each port thread
+has a timeout and if nothing comes in withing that time, then it will timeout and abandon that port.
+'''
