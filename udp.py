@@ -1,47 +1,48 @@
 # Host UDP server
 
 import socket
+import threading
+
+class sockThread(threading.Thread):
+    def __init__(self, port, timeout=30):
+        threading.Thread.__init__(self)
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(timeout)
+        self.sock.bind(('',port))
+        self.start()
+
+    def run(self):
+        while True:
+            try:
+                data, address = self.sock.recvfrom(256)  # buffer size is 256 bytes
+                print "address:", address, "received message:", data
+                self.sock.sendto('Welcome to port:{}\n'.format(address[1]), address)
+            except socket.timeout:
+                self.sock.close()
+                print "Socket:",self.port,"closed"
+                break
 
 # Create a UDP socket
-def newSock(address, timeout=0.001):
+def newSock(address, timeout=None):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
     sock.bind(address)
     return sock
 
-ip = '192.168.0.112'
-port = 1961
-ip = '192.168.2.1'
-ip = ''
-address = (ip, port)
-
-drawer = []
-drawer.append(newSock(address, .1))
+address = ('', 1961) # ip,port
+sock = newSock(address)
 
 try:
     while True:
-        i = 0
-        while i < len(drawer):
-            try:
-                sock = drawer[i]
-                data, address = sock.recvfrom(256)  # buffer size is 256 bytes
-                print "address:", address, "received message:", data
-                if i == 0:
-                    message = 'This is the welcome message.\n'
-                    sock = newSock(('',address[1]))
-                    drawer.append(sock)
-                    print len(drawer), "socks in drawer"
-                else:
-                    message = 'This is the final message.\n'
-                sock.sendto(message, address)
-
-            except socket.timeout:
-                pass
-            i += 1
-
+        data, address = sock.recvfrom(256)  # buffer size is 256 bytes
+        print "address:", address, "received message:", data
+        sockThread(address[1])
+        sock.sendto('Set up new port:{}'.format(address[1]), address)
+except KeyboardInterrupt:
+    pass
 finally:
-    for sock in drawer:
-        sock.close()
+    sock.close()
 
 '''
 each time a packet comes in on port 1961, it spawns a thread and a new socket assigned to the port that it
