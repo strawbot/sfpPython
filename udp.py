@@ -15,7 +15,7 @@ class sockThread(threading.Thread):
             self.sock.bind(('',port))
             self.start()
         except:
-            pass
+            print("failed bind on port {}".format(port))
 
     def run(self):
         while True:
