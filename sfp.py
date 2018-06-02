@@ -184,10 +184,10 @@ class sfpProtocol(object):
 			if handler:
 				handler(packet[1:])
 			elif self.displayUnknowns:
-				if pids.pids.get(packet[0]):
-					self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[packet[0]], packet[0]))
+				if pids.pids.get(pid):
+					self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[pid], pid))
 				else:
-					self.dump("Error: unknown packet: 0x%x " % (packet[0]), packet)
+					self.dump("Error: unknown packet: 0x%x " % (pid), packet)
 
 	def spsHandler(self, packet):
 		pass

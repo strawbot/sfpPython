@@ -2,15 +2,18 @@
 
 import socket
 import threading
+import sfp
 
 class sockThread(threading.Thread):
-    def __init__(self, port, timeout=30):
+    def __init__(self, address, timeout=30):
         threading.Thread.__init__(self)
-        self.port = port
+        self.address = address
+        port = address[1]
         self.name = "Port Thread {}".format(port)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(timeout)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sfp = sfp.sfpProtocol()
         try:
             self.sock.bind(('',port))
             self.start()
@@ -22,10 +25,11 @@ class sockThread(threading.Thread):
             try:
                 data, address = self.sock.recvfrom(256)  # buffer size is 256 bytes
                 print "address:", address, "received message:", data
-                self.sock.sendto('Welcome to port:{}\n'.format(address[1]), address)
+                # self.sfp.rxBytes(data)
+                self.sock.sendto('Welcome to port:{}\n'.format(address[1]), self.address)
             except socket.timeout:
                 self.sock.close()
-                print "Socket:",self.port,"closed"
+                print "Socket:",self.address[1],"closed"
                 break
 
 # Create a UDP socket
@@ -42,7 +46,7 @@ try:
     while True:
         data, address = sock.recvfrom(256)  # buffer size is 256 bytes
         print "address:", address, "received message:", data
-        sockThread(address[1])
+        sockThread(address)
         sock.sendto('Set up new port:{}'.format(address[1]), address)
 except KeyboardInterrupt:
     pass
