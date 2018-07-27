@@ -6,8 +6,10 @@
 # distributer or txBytes
 # call ins: rxBytes and sendNPS
 
-import time
 import sys
+from message import *
+import traceback
+
 if sys.version_info > (3, 0):
 	import queue as Queue
 else:
@@ -182,7 +184,11 @@ class sfpProtocol(object):
 			pid = packet[0]
 			handler = self.handler.get(pid)
 			if handler:
-				handler(packet[1:])
+				try:
+					handler(packet[1:])
+				except Exception, e:
+					error("Handler {} exception: {}".format(pids[pid], e))
+					traceback.print_exc(file=sys.stderr)
 			elif self.displayUnknowns:
 				if pids.pids.get(pid):
 					self.error(NO_HANDLER,"Error: no handler for %s (0x%x)" % (pids.pids[pid], pid))
