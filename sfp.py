@@ -36,7 +36,7 @@ FRAME_OVERHEAD = (MIN_FRAME_LENGTH - PID_LENGTH)
 
 # protocol class
 class sfpProtocol(object):
-    VERBOSE = 0	 # set to non zero for debugging
+    VERBOSE = False	 # set to non zero for debugging
 
     def __init__(self):
         self.receivedPool = Queue.Queue()  # holds received frames
@@ -52,6 +52,7 @@ class sfpProtocol(object):
         self.spsbitExpect = None
         self.frameTimeout = pids.SFP_FRAME_TIME
         self.displayUnknowns = True
+        self.whoto = self.whofrom = pids.DIRECT
 
     # receiver: frame contains received bytes and is parsed for a frame
     def rxBytes(self, bytes):  # run rx state machine receiver
@@ -205,10 +206,11 @@ class sfpProtocol(object):
         if self.handler.get(pid):
             self.handler.pop(pid)
 
-    # sending SFP frames
-    def send_text(self, payload):
-        self.protocol.sendNPS(pids.TALK_IN, [pids.DIRECT, pids.DIRECT] + payload)
+    # sending a talk stream
+    def talkOut(self, s):
+        self.sendNPS(pids.TALK_IN, [self.whoto, self.whofrom]+map(ord,s))
 
+    # sending SFP frames
     def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
         length = len(payload) + FRAME_OVERHEAD + 1	 # pid is separate from payload
         sync = ~length & 0xff
@@ -227,12 +229,6 @@ class sfpProtocol(object):
         if self.transmitPool:
             return self.transmitPool.get()
         return []
-
-    # sending a talk stream
-    def talkOut(self, s):
-        talkout = pids.TALK_IN
-        payload = map(ord,s)
-        self.sendNPS(talkout, [0,0]+payload)
 
     # errors and messages
     def error(self, code = 0, string = ""):
