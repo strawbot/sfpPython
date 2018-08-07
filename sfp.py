@@ -208,7 +208,7 @@ class sfpProtocol(object):
 
     # sending a talk stream
     def talkOut(self, s):
-        self.sendNPS(pids.TALK_IN, [self.whoto, self.whofrom]+map(ord,s))
+        self.sendNPS(pids.EVAL_PID, [self.whoto, self.whofrom]+map(ord,s))
 
     # sending SFP frames
     def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
