@@ -150,7 +150,8 @@ class sfpProtocol(object):
             sumsum += sum
         return sum&0xFF == self.frame[self.length-2] and sumsum&0xFF == self.frame[self.length-1]
 
-    def checkSum(self, frame):	# calculate checksum
+    @staticmethod
+    def checkSum(frame):	# calculate checksum
         sum = sumsum = 0
         for byte in frame:
             sum += byte
@@ -175,7 +176,18 @@ class sfpProtocol(object):
         else:
             self.result = IGNORE_FRAME
 
-    # packet handlers
+    # packet handler
+    @staticmethod
+    def getPacket(frame):
+        length = frame[0]
+        sync = frame[1]
+        packet = frame[2:-2]
+        if MIN_FRAME_LENGTH <= length <= pids.MAX_FRAME_LENGTH:
+            if (~length & 0xFF) == sync:
+                if (frame[-2],frame[-1]) == sfpProtocol.checkSum(frame[:-2]):
+                    return packet
+        return None
+
     def newPacket(self):  # redefine to receive packets
         pass
 
