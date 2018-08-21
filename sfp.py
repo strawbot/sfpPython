@@ -214,13 +214,19 @@ class sfpProtocol(object):
     def setHandler(self, pid, handler):  # route packets to handler
         self.handler[pid] = handler
 
+    def getHandler(self, pid):  # route packets to handler
+        return self.handler[pid]
+
     def removeHandler(self, pid):  # remove packet handler
         if self.handler.get(pid):
             self.handler.pop(pid)
 
+    def who(self):
+        return [self.whoto, self.whofrom]
+
     # sending a talk stream
     def talkOut(self, s):
-        self.sendNPS(pids.EVAL_PID, [self.whoto, self.whofrom]+map(ord,s))
+        self.sendNPS(pids.EVAL_PID, self.who()+map(ord,s))
 
     # sending SFP frames
     def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
