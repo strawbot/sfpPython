@@ -6,7 +6,7 @@ import socket
 import sys, traceback, errno
 import time
 from threading import Thread
-from protocols.sfp import sfpProtocol
+from ..sfp import sfpProtocol
 
 remote_ip = '192.168.0.9'
 sfp_udp_port = 1337

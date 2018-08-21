@@ -7,7 +7,7 @@
 # call ins: rxBytes and sendNPS
 
 import sys
-from message import *
+from lib.pylibs.protocols.interface.message import *
 import traceback
 
 if sys.version_info > (3, 0):

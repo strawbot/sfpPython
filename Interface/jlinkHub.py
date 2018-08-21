@@ -8,7 +8,7 @@
 
 from interface import *
 import traceback
-from protocols.message import warning, error, note, message
+from message import warning, error, note, message
 from threading import Thread
 import sys
 

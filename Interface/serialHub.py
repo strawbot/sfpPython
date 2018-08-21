@@ -4,7 +4,7 @@ from interface import *
 import listports
 import traceback
 import serial
-from protocols.message import warning, error, note, message
+from message import warning, error, note, message
 from threading import Thread
 import sys
 

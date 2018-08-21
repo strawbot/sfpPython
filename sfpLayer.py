@@ -1,8 +1,11 @@
-#  wrapper around sfp
+# Layer around sfp protocol
 
-from protocols import sfp, pids
-from message import *
+import sfp, pids
+from lib.pylibs.protocols.interface.message import *
 from interface.interface import Layer
+from threading import Lock
+
+mutex = Lock()
 
 class SfpLayer (Layer, sfp.sfpProtocol):
     def __init__(self):
@@ -53,7 +56,6 @@ if __name__ == '__main__':
     from interface.serialHub import SerialHub
     from interface.interface import Interface
     import sys
-    from protocols import pids
     import traceback
 
     class app(object):
