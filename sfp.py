@@ -229,12 +229,17 @@ class sfpProtocol(object):
         self.sendNPS(pids.EVAL_PID, self.who()+map(ord,s))
 
     # sending SFP frames
-    def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
+    @staticmethod
+    def makeFrame(pid, payload=[]):
         length = len(payload) + FRAME_OVERHEAD + 1	 # pid is separate from payload
         sync = ~length & 0xff
         frame = [length, sync, pid] + payload
-        sum, sumsum = self.checkSum(frame)
+        sum, sumsum = sfpProtocol.checkSum(frame)
         frame.extend([sum, sumsum])
+        return frame
+
+    def sendNPS(self, pid, payload=[]):  # send a payload via normal packet service
+        frame = self.makeFrame(pid, payload)
         if self.VERBOSE:
             self.dump("\nFrame TX:", frame)
         self.transmitPool.put(frame)
