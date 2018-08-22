@@ -1,7 +1,7 @@
 # Layer around sfp protocol
 
 import sfp, pids
-from lib.pylibs.protocols.interface.message import *
+from interface.message import *
 from interface.interface import Layer
 from threading import Lock
 
