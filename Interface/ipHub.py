@@ -73,7 +73,7 @@ class UdpHub(Hub):
                 name = ''.join(map(chr, packet[5:]))
             port = UdpPort(address, name, self)
             self.add_port(port)
-            frame = sfp.sfpProtocol.makeFrame(pids.EVAL_PID, [pids.DIRECT, pids.IP_HOST, 0xd])
+            frame = sfp.sfpProtocol.makeFrame(pids.EVAL_PID, [pids.DIRECT, pids.UDP_HOST, 0xd])
             port.send_data(''.join(map(chr, frame)))
         port.timestamp = time.time()
 
@@ -84,6 +84,7 @@ class UdpHub(Hub):
                     self.remove_port(port)
 
     def add_port(self, port):
+        print('Adding UDP port {}'.format(port.name))
         for checkPort in self.devicePorts.values():
             if checkPort.name == port.name:
                 self.remove_port(checkPort)
@@ -94,6 +95,7 @@ class UdpHub(Hub):
         self.devicePorts[port.address] = port
 
     def remove_port(self, port):
+        print('Removing {}'.format(port.name))
         super(UdpHub, self).remove_port(port)
         self.devicePorts.pop(port.address)
 
