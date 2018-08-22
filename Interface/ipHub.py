@@ -64,7 +64,9 @@ class UdpHub(Hub):
         port = self.devicePorts.get(address)
         if port:
             if port.is_open() and len(data):
-                port.output.emit(data)
+                packet = sfp.sfpProtocol.getPacket(map(ord, data))
+                if len(packet) > 0 and packet[0] != pids.BEACON:
+                    port.output.emit(data)
         else:
             packet = sfp.sfpProtocol.getPacket(map(ord, data))
             if not packet:
