@@ -10,7 +10,7 @@ from .. import sfp, pids
 
 remote_ip = '192.168.0.9'
 sfp_udp_port = 1337
-udp_poll = 2
+udp_poll = .01
 udp_stale = 30
 
 class UdpPort(Port):
