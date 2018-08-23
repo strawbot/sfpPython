@@ -142,7 +142,7 @@ class JlinkPort(Port):
 class JlinkHub(Hub):
     def __init__(self):
         Hub.__init__(self, "JlinkHub")
-        if module_exists('pylink'):
+        try:
             import pylink
             self.link = pylink.JLink()
             self.pylink = pylink
@@ -153,7 +153,8 @@ class JlinkHub(Hub):
                 if not self.get_port(name):
                     port = JlinkPort(serialno, name, self)
                     self.add_port(port)
-
+        except:
+            print('J-Link is not available')
 
 if __name__ == '__main__':
     from PyQt4.QtCore import QCoreApplication, QTimer
