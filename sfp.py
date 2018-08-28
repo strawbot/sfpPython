@@ -17,6 +17,7 @@ else:
 from collections import deque
 import pids
 from sfpErrors import *
+from threading import Thread
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |
 #  sync = ~length
@@ -186,7 +187,7 @@ class sfpProtocol(object):
             if (~length & 0xFF) == sync:
                 if (frame[-2],frame[-1]) == sfpProtocol.checkSum(frame[:-2]):
                     return packet
-        return None
+        return []
 
     def newPacket(self):  # redefine to receive packets
         pass
@@ -198,7 +199,9 @@ class sfpProtocol(object):
             handler = self.handler.get(pid)
             if handler:
                 try:
-                    handler(packet[1:])
+                    def worker():
+                        handler(packet[1:])
+                    Thread(target=worker).start()
                 except Exception, e:
                     error("Handler {} exception: {}".format(pids.pids[pid], e))
                     traceback.print_exc(file=sys.stderr)

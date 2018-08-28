@@ -111,6 +111,8 @@ class Port(Interface):
         return self.__opened
 
     def open(self):
+        if self.is_open():
+            print ("Error: Open error: {} is already open".format(self.name))
         self.__opened = True
         self.opened.emit()
 
@@ -118,6 +120,8 @@ class Port(Interface):
         if self.is_open():
             self.__opened = False
             self.closed.emit()
+        else:
+            print ("Error: Close error: {} is not open".format(self.name))
 
     def send_data(self, data):
         self.data += data

@@ -86,13 +86,13 @@ class UdpHub(Hub):
                     self.remove_port(port)
 
     def add_port(self, port):
-        print('Adding UDP port {}'.format(port.name))
         for checkPort in self.devicePorts.values():
             if checkPort.name == port.name:
                 self.remove_port(checkPort)
                 checkPort.address = port.address
                 port = checkPort
                 break
+        print('Adding UDP port {}'.format(port.name))
         super(UdpHub, self).add_port(port)
         self.devicePorts[port.address] = port
 
