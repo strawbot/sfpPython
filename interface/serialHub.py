@@ -15,7 +15,7 @@ class SerialPort(Port):
     parity = noparity
     bytesize = serial.EIGHTBITS
 
-    def __init__(self, name, hub='Serial Hub'):
+    def __init__(self, name, hub=None):
         Port.__init__(self, name, name, hub)
         self.port = None
         self.rate = 115200
