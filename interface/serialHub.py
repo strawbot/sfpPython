@@ -58,7 +58,7 @@ class SerialPort(Port):
                     t = Thread(name=self.name, target=self.run)
                     t.setDaemon(True)
                     t.start()  # run serial port in thread
-                sleep(1)
+                sleep(.1)
             except Exception, e:
                 if self.port:
                     self.port.close()
