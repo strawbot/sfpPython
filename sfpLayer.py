@@ -71,9 +71,10 @@ if __name__ == '__main__':
         def test(self):
             try:
                 self.hub = SerialHub()
-                self.port = self.hub.get_port('/dev/cu.usbserial-FT9S9VC1')
+                self.port = self.hub.ports()[0]
                 self.layer = SfpLayer()
                 self.app = Interface('test')
+                self.app.report()
                 # build comm stack
                 self.app.plugin(self.layer)
                 self.layer.plugin(self.port)
@@ -82,6 +83,7 @@ if __name__ == '__main__':
                 self.layer.connected()
                 self.port.opened.connect(self.didopen)
                 self.port.closed.connect(self.didclose)
+                self.port.report()
 
                 self.port.open()
                 if self.port.is_open():

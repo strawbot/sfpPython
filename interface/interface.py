@@ -35,6 +35,9 @@ class Signal(object):
     def connect(self, action=nothing):
         self.__signal = action
 
+    def connectsTo(self):
+        return self.__signal
+
 
 class Interface(object):
     def __init__(self, name='interface'):
@@ -44,6 +47,30 @@ class Interface(object):
         self.input.connect(self.no_input)
         self.output.connect(self.no_output)
         self.signals = [self.input, self.output]
+
+    def report(self):
+        def extract(s):
+            if s.find('<function ') > -1:
+                return s.split()[1]
+            if s.find('<bound method') > -1:
+                return s.split()[2]
+            return s
+
+        if self.input.connectsTo() == self.input.nothing:
+            inputName = 'nothing'
+        elif self.input.connectsTo() == self.no_input:
+            inputName = 'no_input'
+        else:
+            inputName = extract('{}'.format(self.input.connectsTo()))
+
+        if self.output.connectsTo() == self.output.nothing:
+            outputName = 'nothing'
+        elif self.output.connectsTo() == self.no_output:
+            outputName = 'no_output'
+        else:
+            outputName = extract('{}'.format(self.output.connectsTo()))
+
+        print('Interface: {}  input: {}  output: {}'.format(self.name, inputName, outputName))
 
     def no_input(self, data):
         print("Error, {}.input not defined".format(self.name))
@@ -111,8 +138,8 @@ class Port(Interface):
         return self.__opened
 
     def open(self):
-        if self.is_open():
-            print ("Error: Open error: {} is already open".format(self.name))
+        # if self.is_open():
+        #     print ("Error: Open error: {} is already open".format(self.name))
         self.__opened = True
         self.opened.emit()
 
@@ -185,14 +212,17 @@ if __name__ == "__main__":
     s.emit('data')
 
     i = Interface('inter')
+    i.report()
     i.output.connect(hi)
     i.loopback()
     i.input.emit('test1')
-
+    i.report()
 
     t = Interface('top')
+    t.report()
     l = Layer('lay')
     b = Interface('bot')
+    b.report()
 
     t.input.connect(hi)
     t.plugin(b)
@@ -201,14 +231,19 @@ if __name__ == "__main__":
 
     t.plugin(l)
     l.plugin(b)
+    t.report()
 
     l.passthru()
+    l.report()
 
     t.output.emit('testlayer')
 
     t.unplug()
     l.unplug()
     b.unplug()
+    t.report()
+    l.report()
+    b.report()
 
     class test(object):
         def didopen(self):
@@ -222,8 +257,10 @@ if __name__ == "__main__":
                 jp = Hub()
                 jp.add_port(Port(12345, 'test port', jp))
                 self.port = j = jp.get_port(jp.ports()[0].name)
+                j.report()
                 j.opened.connect(self.didopen)
                 j.closed.connect(self.didclose)
+                j.report()
                 j.open()
                 if j.is_open():
                     print("yes its open")

@@ -169,12 +169,14 @@ if __name__ == '__main__':
             try:
                 jp = SerialHub()
                 self.port = j = jp.get_port(jp.ports()[0].name)
+                j.report()
                 j.opened.connect(self.didopen)
                 j.closed.connect(self.didclose)
                 j.output.connect(self.seeInput)
                 j.open()
                 if j.is_open():
                     print("yes its open")
+                    j.report()
                 else:
                     print("port not found")
 
@@ -182,6 +184,7 @@ if __name__ == '__main__':
                     j.send_data("test string {}\n".format(i))
                 sleep(.1)
                 j.close()
+                j.report()
                 # jp.exit()
             except Exception, e:
                 print >> sys.stderr, e
