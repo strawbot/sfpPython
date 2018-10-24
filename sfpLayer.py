@@ -1,9 +1,11 @@
 # Layer around sfp protocol
 
-import sfp, pids
-from interface.message import *
-from interface.interface import Layer
 from threading import Lock
+
+import pids
+import sfp
+from interface.interface import Layer
+from interface.message import *
 
 mutex = Lock()
 
@@ -74,7 +76,6 @@ if __name__ == '__main__':
                 self.port = self.hub.ports()[0]
                 self.layer = SfpLayer()
                 self.app = Interface('test')
-                self.app.report()
                 # build comm stack
                 self.app.plugin(self.layer)
                 self.layer.plugin(self.port)

@@ -8,8 +8,9 @@
 #
 # to get a pin value from a dictionary called pins: pins['UC_LED1'].value
 
-import probe_spids
 import time
+
+import probe_spids
 
 timestamp = 'timestamp'
 

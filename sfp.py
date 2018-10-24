@@ -7,8 +7,9 @@
 # call ins: rxBytes and sendNPS
 
 import sys
-from interface.message import *
 import traceback
+
+from interface.message import *
 
 if sys.version_info > (3, 0):
     import queue as Queue
@@ -229,7 +230,7 @@ class sfpProtocol(object):
 
     # sending a talk stream
     def talkOut(self, s):
-        self.sendNPS(pids.EVAL_PID, self.who()+map(ord,s))
+        self.sendNPS(pids.EVAL_PID, self.who() + map(ord, s))
 
     # sending SFP frames
     @staticmethod
