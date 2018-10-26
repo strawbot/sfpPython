@@ -34,6 +34,7 @@ class SerialPort(Port):
                 self.closePort()
                 error("run - serial port exception: %s" % e)
                 traceback.print_exc(file=sys.stderr)
+        print ('serial thread for {} is done'.format(self.name))
 
     def open(self, rate=None, thread=True, timeout=.01):
         if self.is_open():
@@ -152,10 +153,23 @@ class SerialHub(Hub):
         self.close()
 
 
+# test needs serial cable looped back to itself
 if __name__ == '__main__':
     from time import sleep
 
+    def redText():
+        return '\033[{}m'.format('31')
+
+    def blackText():
+        return '\033[{}m'.format('0')
+
     class Test(object):
+        def __init__(self):
+            self.sh = SerialHub()
+            self.result = False
+            sleep(3)
+            self.port = self.sh.ports()[0]
+
         def didopen(self):
             print("port '{}' at address '{}' is open".format(self.port.name, self.port.address))
 
@@ -163,33 +177,38 @@ if __name__ == '__main__':
             print("port '{}' closed".format(self.port.name))
 
         def seeInput(self, data):
+            self.result = True
             print("Rx'd:[{}]".format(data))
 
         def test(self):
             try:
-                jp = SerialHub()
-                self.port = j = jp.get_port(jp.ports()[0].name)
-                j.report()
-                j.opened.connect(self.didopen)
-                j.closed.connect(self.didclose)
-                j.output.connect(self.seeInput)
-                j.open()
-                if j.is_open():
+                s = self.port
+                s.report()
+                s.opened.connect(self.didopen)
+                s.closed.connect(self.didclose)
+                s.output.connect(self.seeInput)
+                s.open()
+                if s.is_open():
                     print("yes its open")
-                    j.report()
+                    s.report()
                 else:
                     print("port not found")
 
                 for i in range(20):
-                    j.send_data("test string {}\n".format(i))
+                    s.send_data("test string {}\n".format(i))
                 sleep(.1)
-                j.close()
-                j.report()
-                # jp.exit()
+                if not self.result:
+                    print ('{}Error{}: no data received'.format(redText(), blackText()))
+                s.close()
+                s.report()
             except Exception, e:
                 print >> sys.stderr, e
                 traceback.print_exc(file=sys.stderr)
-            finally:
-                sys.exit(0)
+
     t = Test()
+    print ('test 1')
     t.test()
+    sleep(1)
+    print ('test 2')
+    t.test()
+    sys.exit(0)

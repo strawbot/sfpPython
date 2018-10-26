@@ -127,7 +127,6 @@ class Port(Interface):
         self.name = name
         self.hub = hub
         self.__opened = False
-        self.input.connect(self.send_data)
         self.ioError = Signal()
         self.ioException = Signal()
         self.closed = Signal()
@@ -141,6 +140,7 @@ class Port(Interface):
         # if self.is_open():
         #     print ("Error: Open error: {} is already open".format(self.name))
         self.__opened = True
+        self.input.connect(self.send_data)
         self.opened.emit()
 
     def close(self):
