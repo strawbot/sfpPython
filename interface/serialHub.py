@@ -55,6 +55,10 @@ class SerialPort(Port):
                                           bytesize=self.bytesize)
                 Port.open(self)
                 note('opened %s at %d' % (self.name, self.rate))
+                if sys.platform == 'win32':
+                    if self.port._GetCommModemStatus() != 0:
+                        self.port.close()
+                        raise Exception('Unusable port: '+self.port.name)
                 if thread:
                     t = Thread(name=self.name, target=self.run)
                     t.setDaemon(True)
