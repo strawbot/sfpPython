@@ -104,9 +104,11 @@ class JlinkPort(Port):
         for a in range(RAM_START, RAM_END, n):
             for b in self.link.memory_read32(a,n):
                 if b == self.etmid:
-                    self.etmlink = a
-                    self.addQueues()
-                    return True
+                    i,r = self.link.memory_read32(a+4,2)
+                    if i in range(RAM_START, RAM_END) and r in range(RAM_START, RAM_END):
+                        self.etmlink = a
+                        self.addQueues()
+                        return True
                 a += 4
         return False
 

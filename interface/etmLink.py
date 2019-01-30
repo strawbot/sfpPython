@@ -16,7 +16,6 @@ def module_exists(module_name):
     else:
         return True
 
-FLASH_START, FLASH_END = 0x0, 0x80000
 RAM_START, RAM_END = 0x20000000, 0x20020000
 
 jlink = 'jlink-' # use for prefixing serial numbers for user visuals
@@ -25,8 +24,8 @@ jlink = 'jlink-' # use for prefixing serial numbers for user visuals
 
 class byteq(): #IRE
     def __init__(self, etm, a):
-        if a not in range(RAM_START,RAM_END):
-            raise Exception('address 0x%x is outside of RAM'%a)
+        if a not in range(RAM_START, RAM_END):
+            raise Exception('address 0x%x is outside of xRAM'%a)
         self.q = a
         self.etm = etm
         self.e = self.etm.memory_read32(a+8,1)[0]
@@ -112,9 +111,11 @@ class etmLink():
         for a in range(RAM_START, RAM_END, n):
             for b in self.link.memory_read32(a,n):
                 if b == etmLink.etmid:
-                    self.etmlink = a
-                    self.addQueues()
-                    return True
+                    i,r = self.link.memory_read32(a+4,2)
+                    if i in range(RAM_START, RAM_END) and r in range(RAM_START, RAM_END):
+                        self.etmlink = a
+                        self.addQueues()
+                        return True
                 a += 4
         return False
 
@@ -163,6 +164,7 @@ if __name__ == '__main__':
     e.findEtm()
     if e.link:
         print("link found at 0x{:0X}".format(e.etmlink))
+
     else:
         print("link not found")
 
