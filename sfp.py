@@ -9,15 +9,15 @@
 import sys
 import traceback
 
-from interface.message import *
+from .interface.message import *
 
 if sys.version_info > (3, 0):
     import queue as Queue
 else:
     import Queue
 from collections import deque
-import pids
-from sfpErrors import *
+from . import pids
+from .sfpErrors import *
 from threading import Thread
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |
@@ -203,7 +203,7 @@ class sfpProtocol(object):
                     def worker():
                         handler(packet[1:])
                     Thread(target=worker).start()
-                except Exception, e:
+                except Exception as e:
                     error("Handler {} exception: {}".format(pids.pids[pid], e))
                     traceback.print_exc(file=sys.stderr)
             elif self.displayUnknowns:
@@ -230,7 +230,7 @@ class sfpProtocol(object):
 
     # sending a talk stream
     def talkOut(self, s):
-        self.sendNPS(pids.EVAL_PID, self.who() + map(ord, s))
+        self.sendNPS(pids.EVAL_PID, self.who() + list(map(ord, s)))
 
     # sending SFP frames
     @staticmethod

@@ -1,6 +1,6 @@
 # messages  Rob Chapman  Jan 30, 2011
 
-import Queue, time
+import queue, time
 maxMessages = 1000 # maximum queue size before blocking input
 
 def defaultWrite(string, style=''): # default output is to std out
@@ -11,7 +11,7 @@ textout = defaultWrite
 
 def messageQueue(): # output to message queue for isolation
 	global textout
-	messageq = Queue.Queue(maxMessages)
+	messageq = queue.Queue(maxMessages)
 	def writeq(string, style=''):
 		messageq.put((string, style))
 	textout = writeq
@@ -46,13 +46,21 @@ def messageDump(who,s=[], text=0): # dump message in hex or text to terminal
 			s = [s]
 		elif type(s[0]) == type('a'):
 			if type(s) == type([]):
-				s = map(ord, s[0])
+				s = list(map(ord, s[0]))
 			else:
-				s = map(ord, s)
+				s = list(map(ord, s))
 		if text:
-			framedump = ''.join(map(lambda i: chr(i) if i >= ord(' ') and i <= ord('~')  else ' ', s))
+			# old framedump
+			# framedump = ''.join(map(lambda i: chr(i) if i >= ord(' ') and i <= ord('~')  else ' ', s))
+
+			# new framedump
+			framedump = ''.join([chr(i) if i >= ord(' ') and i <= ord('~')  else ' ' for i in s])
 		else:
-			framedump = ' '.join(map (lambda i:hex(i)[2:].upper().zfill(2), s))
+			# old
+			#framedump = ' '.join(map (lambda i:hex(i)[2:].upper().zfill(2), s))
+
+			# new
+			framedump = ' '.join([hex(i)[2:].upper().zfill(2) for i in s])
 	note(who + framedump)
 
 class stdMessage(object): # for redirecting standard out

@@ -1,7 +1,7 @@
 # support for TT over ip using UDP  Robert Chapman  Jul 24, 2018
 #  inputs periodically send frames to let TT know they can be connected to
 
-from interface import *
+from .interface import *
 import socket
 import sys, traceback, errno
 import time
@@ -53,8 +53,8 @@ class UdpHub(Hub):
                 self.receive_data(data, address)
             except socket.timeout:
                 self.update_port_list()
-            except Exception, e:
-                print >> sys.stderr, e
+            except Exception as e:
+                print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
                 print('Unknown exception, quitting udpPort')
                 break
@@ -64,11 +64,11 @@ class UdpHub(Hub):
         port = self.devicePorts.get(address)
         if port:
             if port.is_open() and len(data):
-                packet = sfp.sfpProtocol.getPacket(map(ord, data))
+                packet = sfp.sfpProtocol.getPacket(list(map(ord, data)))
                 if len(packet) > 0 and packet[0] != pids.BEACON:
                     port.output.emit(data)
         else:
-            packet = sfp.sfpProtocol.getPacket(map(ord, data))
+            packet = sfp.sfpProtocol.getPacket(list(map(ord, data)))
             if not packet:
                 name = 'UDP Port: {}'.format(address[1])
             else:
@@ -86,7 +86,7 @@ class UdpHub(Hub):
                     self.remove_port(port)
 
     def add_port(self, port):
-        for checkPort in self.devicePorts.values():
+        for checkPort in list(self.devicePorts.values()):
             if checkPort.name == port.name:
                 self.remove_port(checkPort)
                 checkPort.address = port.address

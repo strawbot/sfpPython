@@ -2,10 +2,10 @@
 
 from threading import Lock
 
-import pids
-import sfp
-from interface.interface import Layer
-from interface.message import *
+from . import pids
+from . import sfp
+from .interface.interface import Layer
+from .interface.message import *
 
 mutex = Lock()
 
@@ -24,7 +24,7 @@ class SfpLayer (Layer, sfp.sfpProtocol):
         self.inner.input.connect(self.receive_data)
 
     def receive_data(self, bytes):
-        self.rxBytes(map(ord, bytes))
+        self.rxBytes(list(map(ord, bytes)))
 
     def newFrame(self):
         data = self.txBytes()
@@ -55,8 +55,8 @@ class SfpLayer (Layer, sfp.sfpProtocol):
 
 
 if __name__ == '__main__':
-    from interface.serialHub import SerialHub
-    from interface.interface import Interface
+    from .interface.serialHub import SerialHub
+    from .interface.interface import Interface
     import sys
     import traceback
 
@@ -95,8 +95,8 @@ if __name__ == '__main__':
                 self.app.output.emit('\r')
                 self.port.wait(1000)
                 self.hub.close()
-            except Exception, e:
-                print >> sys.stderr, e
+            except Exception as e:
+                print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
             finally:
                 sys.exit(0)

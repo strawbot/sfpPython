@@ -9,7 +9,7 @@ def listports():
         # http://eli.thegreenplace.net/2009/07/31/listing-all-serial-ports-on-windows-with-python/
         # modified to suit needs of the few if not the 1
 
-        import _winreg as winreg
+        import winreg
         import itertools
 
         """ Uses the Win32 registry to return an
@@ -47,10 +47,10 @@ def listports():
         ports.extend(portsextra)
 
     else:
-        print >>sys.stderr, 'unknown system platform: %s'%sys.platform
+        print('unknown system platform: %s' % sys.platform, file=sys.stderr)
 
     return ports
 
 # testing
 if __name__ == '__main__':
-    print >>sys.stderr, listports()  #enumerate_serial_ports()
+    print(listports(), file=sys.stderr)  #enumerate_serial_ports()

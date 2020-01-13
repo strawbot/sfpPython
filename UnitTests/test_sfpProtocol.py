@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from sfp import sfpProtocol
-from sfpErrors import *
-from pids import MAX_FRAME_LENGTH
-import pids
+from ..sfp import sfpProtocol
+from ..sfpErrors import *
+from ..pids import MAX_FRAME_LENGTH
+from .. import pids
 
 
 class sfpPlus(sfpProtocol):

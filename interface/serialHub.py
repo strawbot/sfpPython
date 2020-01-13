@@ -1,10 +1,10 @@
 # pluggable serial port  Robert Chapman  Jul 26, 2018
 
-from interface import *
-import listports
+from .interface import *
+from . import listports
 import traceback
 import serial
-from message import warning, error, note, message
+from .message import warning, error, note, message
 from threading import Thread
 import sys
 
@@ -30,7 +30,7 @@ class SerialPort(Port):
             # except IOError:
             #     self.closePort()
             #     note('Alert: device removed while open ')
-            except Exception, e:
+            except Exception as e:
                 self.closePort()
                 error("run - serial port exception: %s" % e)
                 traceback.print_exc(file=sys.stderr)
@@ -64,10 +64,10 @@ class SerialPort(Port):
                     t.setDaemon(True)
                     t.start()  # run serial port in thread
                 sleep(.1)
-            except Exception, e:
+            except Exception as e:
                 if self.port:
                     self.port.close()
-                print >> sys.stderr, e
+                print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
                 raise Exception('open port failed for ' + self.name)
 
@@ -97,7 +97,7 @@ class SerialPort(Port):
                 self.port.write(s)
             except IOError:
                 self.ioError.emit('Alert: device closed while writing ')
-            except Exception, e:
+            except Exception as e:
                 if self.port:
                     self.ioException.emit("Error: send_data - serial port exception: %s" % e)
 
@@ -147,8 +147,8 @@ class SerialHub(Hub):
                     port = SerialPort(a, self)
                     self.add_port(port)
                 self.wait(self.update_interval)
-        except Exception, e:
-            print >> sys.stderr, e
+        except Exception as e:
+            print(e, file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
 
     def exit(self):
@@ -205,8 +205,8 @@ if __name__ == '__main__':
                     print ('{}Error{}: no data received'.format(redText(), blackText()))
                 s.close()
                 s.report()
-            except Exception, e:
-                print >> sys.stderr, e
+            except Exception as e:
+                print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
 
     t = Test()
