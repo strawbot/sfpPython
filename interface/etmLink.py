@@ -128,9 +128,9 @@ class etmLink():
             self.link.restart()
             if self.link.connected():
                 self.findEtm()
-        except Exception, e:
+        except Exception as e:
             self.link.close()
-            print >> sys.stderr, e
+            print(e, file=sys.stderr)
 
     def read(self, n):
         s = []

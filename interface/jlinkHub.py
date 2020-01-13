@@ -6,9 +6,9 @@
 #  ->txq: points to micros byte transmit queue; must read from here
 #  ->rxq: points to mciros byte receive queue; must write to here
 
-from interface import *
+from .interface import *
 import traceback
-from message import warning, error, note, message
+from .message import warning, error, note, message
 from threading import Thread
 import sys
 
@@ -87,7 +87,7 @@ class JlinkPort(Port):
                     self.output.emit(text)
                 else:
                     self.wait(10)
-            except Exception, e:
+            except Exception as e:
                 self.close()
                 error("run - JLink port exception: %s" % e)
                 traceback.print_exc(file=sys.stderr)
@@ -125,9 +125,9 @@ class JlinkPort(Port):
                     t.setDaemon(True)
                     t.start()  # run port in thread
                     note('opened %s' % (self.name))
-        except Exception, e:
+        except Exception as e:
             self.link.close()
-            print >> sys.stderr, e
+            print(e, file=sys.stderr)
 
     def send_data(self, s):
         for c in s:

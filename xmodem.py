@@ -3,8 +3,8 @@
 import serial
 try:
     from cStringIO import StringIO
-except:
-    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 from xmodem import XMODEM, CRC
 from time import sleep
 
