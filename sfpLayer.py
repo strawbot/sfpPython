@@ -2,10 +2,10 @@
 
 from threading import Lock
 
-from . import pids
-from . import sfp
-from .interface.interface import Layer
-from .interface.message import *
+from protocols import pids
+from protocols import sfp
+from protocols.interface.interface import Layer
+from protocols.interface.message import *
 
 mutex = Lock()
 
@@ -55,8 +55,8 @@ class SfpLayer (Layer, sfp.sfpProtocol):
 
 
 if __name__ == '__main__':
-    from .interface.serialHub import SerialHub
-    from .interface.interface import Interface
+    from protocols.interface.serialHub import SerialHub
+    from protocols.interface.interface import Interface
     import sys
     import traceback
 

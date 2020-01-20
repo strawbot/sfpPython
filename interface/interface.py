@@ -171,10 +171,10 @@ class Hub(object):
         self.__myports = {}
 
     def ports(self): # some instance
-        return self.__myports.values()
+        return list(self.__myports.values())
 
     def all_ports(self): # class of all hubs
-        return Hub.__allports.values()
+        return list(Hub.__allports.values())
 
     def add_port(self, port):
         if not self.get_port(port.name):

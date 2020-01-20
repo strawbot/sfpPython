@@ -1,12 +1,13 @@
 # pluggable serial port  Robert Chapman  Jul 26, 2018
 
-from .interface import *
-from . import listports
+from protocols.interface.interface import Port, Hub
+from protocols.interface import listports
 import traceback
 import serial
-from .message import warning, error, note, message
+from protocols.interface.message import warning, error, note, message
 from threading import Thread
 import sys
+from time import sleep
 
 class SerialPort(Port):
     # define signals
@@ -94,7 +95,7 @@ class SerialPort(Port):
     def send_data(self, s):
         if self.isOpen():
             try:
-                self.port.write(s)
+                self.port.write(s.encode())
             except IOError:
                 self.ioError.emit('Alert: device closed while writing ')
             except Exception as e:

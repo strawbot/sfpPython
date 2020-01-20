@@ -9,15 +9,16 @@
 import sys
 import traceback
 
-from .interface.message import *
+from protocols.interface.message import *
 
-if sys.version_info > (3, 0):
-    import queue as Queue
-else:
-    import Queue
+# if sys.version_info > (3, 0):
+#     import queue as Queue
+# else:
+#     import Queue
+import queue
 from collections import deque
-from . import pids
-from .sfpErrors import *
+from protocols import pids
+from protocols.sfpErrors import *
 from threading import Thread
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |
@@ -41,8 +42,8 @@ class sfpProtocol(object):
     VERBOSE = False	 # set to non zero for debugging
 
     def __init__(self):
-        self.receivedPool = Queue.Queue()  # holds received frames
-        self.transmitPool = Queue.Queue()  # holds outgoing frames
+        self.receivedPool = queue.Queue()  # holds received frames
+        self.transmitPool = queue.Queue()  # holds outgoing frames
         self.handler = {}  # for associating handlers with PIDs
         self.setHandler(pids.SPS, self.spsHandler)
         self.frame = deque() # incoming data

@@ -1,12 +1,12 @@
 # support for TT over ip using UDP  Robert Chapman  Jul 24, 2018
 #  inputs periodically send frames to let TT know they can be connected to
 
-from .interface import *
+from protocols.interface.interface import Hub, Port
 import socket
 import sys, traceback, errno
 import time
 from threading import Thread
-from .. import sfp, pids
+from protocols import sfp, pids
 
 remote_ip = '192.168.0.9'
 sfp_udp_port = 1337

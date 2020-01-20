@@ -10,7 +10,7 @@
 
 import time
 
-from . import probe_spids
+from protocols import probe_spids
 
 timestamp = 'timestamp'
 
