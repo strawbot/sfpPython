@@ -95,7 +95,7 @@ class SerialPort(Port):
     def send_data(self, s):
         if self.isOpen():
             try:
-                self.port.write(s.encode())
+                self.port.write(s)
             except IOError:
                 self.ioError.emit('Alert: device closed while writing ')
             except Exception as e:

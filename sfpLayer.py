@@ -24,12 +24,12 @@ class SfpLayer (Layer, sfp.sfpProtocol):
         self.inner.input.connect(self.receive_data)
 
     def receive_data(self, bytes):
-        self.rxBytes(list(map(ord, bytes)))
+        # self.rxBytes(list(map(ord, bytes)))
+        self.rxBytes(bytes)
 
     def newFrame(self):
         data = self.txBytes()
-        string = ''.join(map(chr, data))
-        self.inner.output.emit(string)
+        self.inner.output.emit(data)
 
     def newPacket(self):
         self.distributer()
