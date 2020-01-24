@@ -9,7 +9,7 @@
 import sys
 import traceback
 
-from protocols.interface.message import *
+from pylibs.protocols.interface.message import *
 
 # if sys.version_info > (3, 0):
 #     import queue as Queue
@@ -17,8 +17,8 @@ from protocols.interface.message import *
 #     import Queue
 import queue
 from collections import deque
-from protocols import pids
-from protocols.sfpErrors import *
+from pylibs.protocols import pids
+from pylibs.protocols.sfpErrors import *
 from threading import Thread
 
 # sfp format: |0 length |1 sync |2 pid |3 payload | checksum |

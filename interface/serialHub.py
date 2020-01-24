@@ -1,10 +1,10 @@
 # pluggable serial port  Robert Chapman  Jul 26, 2018
 
-from protocols.interface.interface import Port, Hub
-from protocols.interface import listports
+from pylibs.protocols.interface.interface import Port, Hub
+from pylibs.protocols.interface import listports
 import traceback
 import serial
-from protocols.interface.message import warning, error, note, message
+from pylibs.protocols.interface.message import warning, error, note, message
 from threading import Thread
 import sys
 from time import sleep
