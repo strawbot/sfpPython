@@ -1,4 +1,4 @@
-# generated file on 2020-02-07 15:25:12.332507. Do not edit!
+# generated file on 2020-02-10 11:40:05.404265. Do not edit!
 
 class _statParam(): # _won't be imported
     def __init__(self, name, num, type, length):
@@ -139,6 +139,41 @@ stats = [wdogResetCtr,
 	overDueTea]
 
 # Params
+Ssid = _statParam("Ssid", 1, CHAR, 33)
+Password = _statParam("Password", 2, CHAR, 65)
+SerialNo = _statParam("SerialNo", 3, CHAR, 6)
+DataServer = _statParam("DataServer", 4, CHAR, 64)
+TimeServer = _statParam("TimeServer", 5, CHAR, 64)
+DataPort = _statParam("DataPort", 6, CHAR, 6)
+ConnectInterval = _statParam("ConnectInterval", 7, CELL, 1)
+CalibrateInterval = _statParam("CalibrateInterval", 8, CELL, 1)
+Services = _statParam("Services", 9, BYTE, 1)
+WdogDisabled = _statParam("WdogDisabled", 10, BYTE, 1)
+FileServer = _statParam("FileServer", 11, CHAR, 64)
+FilePort = _statParam("FilePort", 12, CHAR, 6)
+TimeSyncInterval = _statParam("TimeSyncInterval", 13, CELL, 1)
+FileCheckInterval = _statParam("FileCheckInterval", 14, CELL, 1)
+CellModem = _statParam("CellModem", 15, BOOL, 1)
+CellWait = _statParam("CellWait", 16, CELL, 1)
+TranslatedV1 = _statParam("TranslatedV1", 17, BOOL, 1)
+Netid = _statParam("Netid", 18, CHAR, 32)
+DeviceName = _statParam("DeviceName", 19, CHAR, 32)
+StationName = _statParam("StationName", 20, CHAR, 32)
+InitFileSystem = _statParam("InitFileSystem", 21, BOOL, 1)
+McuSignature = _statParam("McuSignature", 22, CHAR, 11)
+FileSystemVersion = _statParam("FileSystemVersion", 23, LONG, 1)
+Uid = _statParam("Uid", 24, CHAR, 7)
+Apn = _statParam("Apn", 25, CHAR, 64)
+PdpId = _statParam("PdpId", 26, CHAR, 2)
+TempRhInterval = _statParam("TempRhInterval", 27, CELL, 1)
+HealthReportInterval = _statParam("HealthReportInterval", 28, CELL, 1)
+ArchStatsInterval = _statParam("ArchStatsInterval", 29, CELL, 1)
+PowerResolution = _statParam("PowerResolution", 30, CELL, 1)
+ConfigServer = _statParam("ConfigServer", 31, CHAR, 64)
+ConfigPort = _statParam("ConfigPort", 32, CHAR, 6)
+UseConfig = _statParam("UseConfig", 33, BOOL, 1)
+ConnectOffset = _statParam("ConnectOffset", 34, CELL, 1)
+DataFileVersion = _statParam("DataFileVersion", 35, BYTE, 1)
 Gitrev = _statParam("Gitrev", 200, CHAR, 33)
 Gitbranch = _statParam("Gitbranch", 201, CHAR, 33)
 Gitstate = _statParam("Gitstate", 202, CHAR, 33)
@@ -147,7 +182,42 @@ Buildtime = _statParam("Buildtime", 204, CHAR, 33)
 IMEI = _statParam("IMEI", 205, CHAR, 16)
 SimId = _statParam("SimId", 206, CHAR, 21)
 
-params = [Gitrev, 
+params = [Ssid, 
+	Password, 
+	SerialNo, 
+	DataServer, 
+	TimeServer, 
+	DataPort, 
+	ConnectInterval, 
+	CalibrateInterval, 
+	Services, 
+	WdogDisabled, 
+	FileServer, 
+	FilePort, 
+	TimeSyncInterval, 
+	FileCheckInterval, 
+	CellModem, 
+	CellWait, 
+	TranslatedV1, 
+	Netid, 
+	DeviceName, 
+	StationName, 
+	InitFileSystem, 
+	McuSignature, 
+	FileSystemVersion, 
+	Uid, 
+	Apn, 
+	PdpId, 
+	TempRhInterval, 
+	HealthReportInterval, 
+	ArchStatsInterval, 
+	PowerResolution, 
+	ConfigServer, 
+	ConfigPort, 
+	UseConfig, 
+	ConnectOffset, 
+	DataFileVersion, 
+	Gitrev, 
 	Gitbranch, 
 	Gitstate, 
 	Builddate, 
