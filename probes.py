@@ -1,4 +1,4 @@
-# generated file on 2020-02-10 12:35:59.677357. Do not edit!
+# generated file on 2020-02-10 13:25:18.612292. Do not edit!
 
 class _statParam(): # _won't be imported
     def __init__(self, name, num, type, length):
@@ -322,84 +322,6 @@ USART2_RX = _statParam("USART2_RX", 93, BYTE, 2)
 USART2_TX = _statParam("USART2_TX", 94, BYTE, 2)
 USB_RTS = _statParam("USB_RTS", 95, BYTE, 2)
 WIFI_PWR_CTRL = _statParam("WIFI_PWR_CTRL", 96, BYTE, 2)
-ADC_SOL = _statParam("ADC_SOL", 97, BYTE, 2)
-ADC_VIN_ON = _statParam("ADC_VIN_ON", 98, BYTE, 2)
-ADC_VIN = _statParam("ADC_VIN", 99, BYTE, 2)
-BU_VIN = _statParam("BU_VIN", 100, BYTE, 2)
-C1_SDI12_NRX_TX = _statParam("C1_SDI12_NRX_TX", 101, BYTE, 2)
-C2_SDI12_NRX_TX = _statParam("C2_SDI12_NRX_TX", 102, BYTE, 2)
-C3_SDI12_NRX_TX = _statParam("C3_SDI12_NRX_TX", 103, BYTE, 2)
-CELL_CTS = _statParam("CELL_CTS", 104, BYTE, 2)
-CELL_DCD = _statParam("CELL_DCD", 105, BYTE, 2)
-CELL_DSR = _statParam("CELL_DSR", 106, BYTE, 2)
-CELL_DTR = _statParam("CELL_DTR", 107, BYTE, 2)
-CELL_MODEM_RX = _statParam("CELL_MODEM_RX", 108, BYTE, 2)
-CELL_MODEM_TX = _statParam("CELL_MODEM_TX", 109, BYTE, 2)
-CELL_PWR_ON = _statParam("CELL_PWR_ON", 110, BYTE, 2)
-CELL_RESET = _statParam("CELL_RESET", 111, BYTE, 2)
-CELL_RTS = _statParam("CELL_RTS", 112, BYTE, 2)
-COM1_SEL_SDI12 = _statParam("COM1_SEL_SDI12", 113, BYTE, 2)
-COM2_SEL_SDI12 = _statParam("COM2_SEL_SDI12", 114, BYTE, 2)
-CTRL_CELL_PWR = _statParam("CTRL_CELL_PWR", 115, BYTE, 2)
-DC_DC_CNTL = _statParam("DC_DC_CNTL", 116, BYTE, 2)
-FLASH_SPI_CS = _statParam("FLASH_SPI_CS", 117, BYTE, 2)
-FLASH_SPI_WP = _statParam("FLASH_SPI_WP", 118, BYTE, 2)
-FRAM_SPI_CLK = _statParam("FRAM_SPI_CLK", 119, BYTE, 2)
-FRAM_SPI_CS = _statParam("FRAM_SPI_CS", 120, BYTE, 2)
-FRAM_SPI_MISO = _statParam("FRAM_SPI_MISO", 121, BYTE, 2)
-FRAM_SPI_MOSI = _statParam("FRAM_SPI_MOSI", 122, BYTE, 2)
-FRAM_SPI_WP = _statParam("FRAM_SPI_WP", 123, BYTE, 2)
-GPIO_SWO = _statParam("GPIO_SWO", 124, BYTE, 2)
-GPIO_TCLK = _statParam("GPIO_TCLK", 125, BYTE, 2)
-GPIO_TD0 = _statParam("GPIO_TD0", 126, BYTE, 2)
-GPIO_TD1 = _statParam("GPIO_TD1", 127, BYTE, 2)
-GPIO_TD2 = _statParam("GPIO_TD2", 128, BYTE, 2)
-GPIO_TD3 = _statParam("GPIO_TD3", 129, BYTE, 2)
-GS_ASYNC_IRQ = _statParam("GS_ASYNC_IRQ", 130, BYTE, 2)
-GS_NEXT_RESET = _statParam("GS_NEXT_RESET", 131, BYTE, 2)
-GS_RX = _statParam("GS_RX", 132, BYTE, 2)
-GS_TX = _statParam("GS_TX", 133, BYTE, 2)
-GS_WAKEUP_STANDBY = _statParam("GS_WAKEUP_STANDBY", 134, BYTE, 2)
-I2C0_SCL = _statParam("I2C0_SCL", 135, BYTE, 2)
-I2C0_SDA = _statParam("I2C0_SDA", 136, BYTE, 2)
-LFXO_N = _statParam("LFXO_N", 137, BYTE, 2)
-LFXO_P = _statParam("LFXO_P", 138, BYTE, 2)
-NRTC_IRQ = _statParam("NRTC_IRQ", 139, BYTE, 2)
-OC_OUT = _statParam("OC_OUT", 140, BYTE, 2)
-PLUS5V_NOFF = _statParam("PLUS5V_NOFF", 141, BYTE, 2)
-PROGRAM_RESTORE = _statParam("PROGRAM_RESTORE", 142, BYTE, 2)
-PUSHBUTTON1 = _statParam("PUSHBUTTON1", 143, BYTE, 2)
-PWR_COM1 = _statParam("PWR_COM1", 144, BYTE, 2)
-PWR_COM2 = _statParam("PWR_COM2", 145, BYTE, 2)
-PWR_COM3 = _statParam("PWR_COM3", 146, BYTE, 2)
-PWR_DAC1 = _statParam("PWR_DAC1", 147, BYTE, 2)
-PWR_DAC2 = _statParam("PWR_DAC2", 148, BYTE, 2)
-SENS1 = _statParam("SENS1", 149, BYTE, 2)
-SENS2 = _statParam("SENS2", 150, BYTE, 2)
-SENS3 = _statParam("SENS3", 151, BYTE, 2)
-TP5 = _statParam("TP5", 152, BYTE, 2)
-TP6 = _statParam("TP6", 153, BYTE, 2)
-TP7 = _statParam("TP7", 154, BYTE, 2)
-UCEXC = _statParam("UCEXC", 155, BYTE, 2)
-UC_DEBUG_RX = _statParam("UC_DEBUG_RX", 156, BYTE, 2)
-UC_DEBUG_TX = _statParam("UC_DEBUG_TX", 157, BYTE, 2)
-UC_EN_485N232_1 = _statParam("UC_EN_485N232_1", 158, BYTE, 2)
-UC_EN_485N232_2 = _statParam("UC_EN_485N232_2", 159, BYTE, 2)
-UC_EN_RX_485232_1 = _statParam("UC_EN_RX_485232_1", 160, BYTE, 2)
-UC_EN_RX_485232_2 = _statParam("UC_EN_RX_485232_2", 161, BYTE, 2)
-UC_EN_TX_485232_1 = _statParam("UC_EN_TX_485232_1", 162, BYTE, 2)
-UC_EN_TX_485232_2 = _statParam("UC_EN_TX_485232_2", 163, BYTE, 2)
-UC_LED1 = _statParam("UC_LED1", 164, BYTE, 2)
-UC_LED2 = _statParam("UC_LED2", 165, BYTE, 2)
-UC_LED3 = _statParam("UC_LED3", 166, BYTE, 2)
-UC_RX_COM1 = _statParam("UC_RX_COM1", 167, BYTE, 2)
-UC_RX_COM2 = _statParam("UC_RX_COM2", 168, BYTE, 2)
-UC_RX_COM3 = _statParam("UC_RX_COM3", 169, BYTE, 2)
-UC_TX_COM1 = _statParam("UC_TX_COM1", 170, BYTE, 2)
-UC_TX_COM2 = _statParam("UC_TX_COM2", 171, BYTE, 2)
-UC_TX_COM3 = _statParam("UC_TX_COM3", 172, BYTE, 2)
-USB_RTS = _statParam("USB_RTS", 173, BYTE, 2)
-WIFI_PWR_CTRL = _statParam("WIFI_PWR_CTRL", 174, BYTE, 2)
 
 pins = [ADC0_CH6, 
 	ADC0_CH7, 
@@ -496,83 +418,5 @@ pins = [ADC0_CH6,
 	USART2_CLK, 
 	USART2_RX, 
 	USART2_TX, 
-	USB_RTS, 
-	WIFI_PWR_CTRL, 
-	ADC_SOL, 
-	ADC_VIN_ON, 
-	ADC_VIN, 
-	BU_VIN, 
-	C1_SDI12_NRX_TX, 
-	C2_SDI12_NRX_TX, 
-	C3_SDI12_NRX_TX, 
-	CELL_CTS, 
-	CELL_DCD, 
-	CELL_DSR, 
-	CELL_DTR, 
-	CELL_MODEM_RX, 
-	CELL_MODEM_TX, 
-	CELL_PWR_ON, 
-	CELL_RESET, 
-	CELL_RTS, 
-	COM1_SEL_SDI12, 
-	COM2_SEL_SDI12, 
-	CTRL_CELL_PWR, 
-	DC_DC_CNTL, 
-	FLASH_SPI_CS, 
-	FLASH_SPI_WP, 
-	FRAM_SPI_CLK, 
-	FRAM_SPI_CS, 
-	FRAM_SPI_MISO, 
-	FRAM_SPI_MOSI, 
-	FRAM_SPI_WP, 
-	GPIO_SWO, 
-	GPIO_TCLK, 
-	GPIO_TD0, 
-	GPIO_TD1, 
-	GPIO_TD2, 
-	GPIO_TD3, 
-	GS_ASYNC_IRQ, 
-	GS_NEXT_RESET, 
-	GS_RX, 
-	GS_TX, 
-	GS_WAKEUP_STANDBY, 
-	I2C0_SCL, 
-	I2C0_SDA, 
-	LFXO_N, 
-	LFXO_P, 
-	NRTC_IRQ, 
-	OC_OUT, 
-	PLUS5V_NOFF, 
-	PROGRAM_RESTORE, 
-	PUSHBUTTON1, 
-	PWR_COM1, 
-	PWR_COM2, 
-	PWR_COM3, 
-	PWR_DAC1, 
-	PWR_DAC2, 
-	SENS1, 
-	SENS2, 
-	SENS3, 
-	TP5, 
-	TP6, 
-	TP7, 
-	UCEXC, 
-	UC_DEBUG_RX, 
-	UC_DEBUG_TX, 
-	UC_EN_485N232_1, 
-	UC_EN_485N232_2, 
-	UC_EN_RX_485232_1, 
-	UC_EN_RX_485232_2, 
-	UC_EN_TX_485232_1, 
-	UC_EN_TX_485232_2, 
-	UC_LED1, 
-	UC_LED2, 
-	UC_LED3, 
-	UC_RX_COM1, 
-	UC_RX_COM2, 
-	UC_RX_COM3, 
-	UC_TX_COM1, 
-	UC_TX_COM2, 
-	UC_TX_COM3, 
 	USB_RTS, 
 	WIFI_PWR_CTRL]
