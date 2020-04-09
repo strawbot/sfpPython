@@ -2,10 +2,10 @@
 
 from threading import Lock
 
-from pylibs.protocols import pids
-from pylibs.protocols import sfp
-from pylibs.protocols.interface.interface import Layer
-from pylibs.protocols.interface.message import *
+from . import pids
+from . import sfp
+from .interface.interface import Layer
+from .interface.message import *
 
 mutex = Lock()
 
