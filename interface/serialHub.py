@@ -70,7 +70,7 @@ class SerialPort(Port):
                     self.port.close()
                 print(e, file=sys.stderr)
                 traceback.print_exc(file=sys.stderr)
-                raise Exception('open port failed for ' + self.name)
+                raise ConnectionError('open port failed for ' + self.name)
 
     def closePort(self):
         Port.close(self)
