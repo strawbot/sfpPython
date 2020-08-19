@@ -3,22 +3,23 @@
 import queue, time
 maxMessages = 1000 # maximum queue size before blocking input
 
+textout = None
+
+def setTextOutput(f): # output can be redirected to a different place
+	global textout
+	textout = f
+
 def defaultWrite(string, style=''): # default output is to std out
-	import sys
 	print(string)
 
-textout = defaultWrite
+setTextOutput(defaultWrite)
 
 def messageQueue(): # output to message queue for isolation
-	global textout
 	messageq = queue.Queue(maxMessages)
 	def writeq(string, style=''):
 		messageq.put((string, style))
-	textout = writeq
+	setTextOutput(writeq)
 	return messageq
-
-def setTextOutput(f): # output can be redirected to a different place
-	textout = f
 
 # messages
 def note(string):
@@ -31,7 +32,6 @@ def error(string):
 	textout('\n'+string, style='error')
 
 def message(string, style=''): # mark a message for formatting
-#	string = ''.join(x+hex(x) for x in string)
 	textout(string, style)
 
 def write(text): # route the message to file or window
@@ -50,16 +50,8 @@ def messageDump(who,s=[], text=0): # dump message in hex or text to terminal
 			else:
 				s = list(map(ord, s))
 		if text:
-			# old framedump
-			# framedump = ''.join(map(lambda i: chr(i) if i >= ord(' ') and i <= ord('~')  else ' ', s))
-
-			# new framedump
 			framedump = ''.join([chr(i) if i >= ord(' ') and i <= ord('~')  else ' ' for i in s])
 		else:
-			# old
-			#framedump = ' '.join(map (lambda i:hex(i)[2:].upper().zfill(2), s))
-
-			# new
 			framedump = ' '.join([hex(i)[2:].upper().zfill(2) for i in s])
 	note(who + framedump)
 
