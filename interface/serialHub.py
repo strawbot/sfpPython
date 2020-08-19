@@ -95,6 +95,12 @@ class SerialPort(Port):
     def send_data(self, s):
         if self.isOpen():
             try:
+                print(s)
+                if type(s) == type([]):
+                    s = bytearray(s)
+                else:
+                    s = str.encode(s)
+                print('type of s:',type(s))
                 self.port.write(s)
             except IOError:
                 self.ioError.emit('Alert: device closed while writing ')
