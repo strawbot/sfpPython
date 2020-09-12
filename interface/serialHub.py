@@ -98,7 +98,7 @@ class SerialPort(Port):
                 print(s)
                 if type(s) == type([]):
                     s = bytearray(s)
-                else:
+                elif type(s) == type(''):
                     s = str.encode(s)
                 print('type of s:',type(s))
                 self.port.write(s)
