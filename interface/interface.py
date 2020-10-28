@@ -118,7 +118,7 @@ class Layer(Interface):
 from time import sleep
 
 class Port(Interface):
-    nodata = ''
+    nodata = bytearray()
 
     def __init__(self, address=0, name=None, hub=None):
         Interface.__init__(self)
@@ -151,7 +151,7 @@ class Port(Interface):
             print ("Error: Close error: {} is not open".format(self.name))
 
     def send_data(self, data):
-        self.data += data
+        self.data.append(data)
 
     def get_data(self):
         data = self.data
