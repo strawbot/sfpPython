@@ -52,17 +52,23 @@ def check_wad():
         elif n:
             print('orphan bytes: ', n)
 
-# gather a packet from serial port
-def capture(port, n):
-    baudrate = 1000000
-    stream = SerialPort(port)
-    stream.open(rate=baudrate)
-    stream.output.connect(textout)
-    while len(waveforms.samps) < n and stream.is_open():
-        time.sleep(.1)
-        check_wad()
-    stream.close()
+# capture waveforms from serial port
+def empty_capture():
+    waveforms.samps[:] = []
 
+def capture(n, timeout=0):
+    while len(waveforms.samps) < n:
+        for i in range(10): # poll for a second
+            time.sleep(.1)
+            check_wad()
+        if timeout: # 0 is infinity
+            if timeout == 1: # check for timeout
+                break
+            timeout -= 1
+
+    samps = list(waveforms.samps[:n])
+    waveforms.samps[:n] = []
+    return samps
 
 # processing
 def removeDC(samps):
@@ -202,9 +208,10 @@ def sync(bits):
     return bits
 
 def to_bytes(samps):
-    # convert to bytes;
     byte_bits = (len(samps) // 8) * 8
-    bytes = [(sum(x * y for x, y in zip(samps[i:i + 8], mask))) for i in range(0, byte_bits, 8)]
+    return [(sum(x * y for x, y in zip(samps[i:i + 8], mask))) for i in range(0, byte_bits, 8)]
+
+def frame_bytes(bytes):
     notes = []
     for i in range(len(bytes)):
         notes.extend([i,' %02X'%bytes[i]])
@@ -257,8 +264,28 @@ def view_waveforms(showbitz):
     # todo: factor in number of waveforms to generate 12
     plt.show()
 
+def open_stream(port, baudrate=1000000):
+    stream = SerialPort(port)
+    stream.output.connect(textout)
+    stream.open(rate=baudrate)
+    return stream
+
+def get_frames(n, timeout=0):
+    empty_capture()
+    frames = []
+    while n:
+        print(n)
+        n -= 1
+        samples,title = capture(1, timeout)[0]
+        frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
+        frames.append(frame)
+    return frames
+
+
 if __name__ == '__main__':
-    capture('/dev/cu.usbserial-FTVDZGTTA', 1)
+    stream = open_stream('/dev/cu.usbserial-FTVDZGTTA')
+    capture(1)
+    stream.close()
     showbitz = []
     for samples,title in waveforms.samps:
         waveforms.dc = removeDC(samples)
@@ -268,7 +295,7 @@ if __name__ == '__main__':
         waveforms.ha = comb(waveforms.tr)
         waveforms.bits = clean(waveforms.ha)
         waveforms.sy = sync(waveforms.bits)
-        waveforms.by,waveforms.bynotes = to_bytes(waveforms.sy)
+        waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
 
         showbitz.append([samples, title])
         # showbitz.append([waveforms.dc, title + ':dc removed'])
