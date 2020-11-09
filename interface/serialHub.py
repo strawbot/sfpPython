@@ -100,7 +100,6 @@ class SerialPort(Port):
                     s = bytearray(s)
                 elif type(s) == type(''):
                     s = str.encode(s)
-                print('type of s:',type(s))
                 self.port.write(s)
             except IOError:
                 self.ioError.emit('Alert: device closed while writing ')

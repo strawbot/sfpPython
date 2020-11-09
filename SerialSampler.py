@@ -10,6 +10,7 @@ from numpy.fft import fft as fft
 import numpy as np
 import scipy.fftpack
 import matplotlib.pyplot as plt
+import time
 
 note('Serial Sampler V1')
 import sys,time
@@ -38,7 +39,7 @@ def check_wad():
             evens = sum(b[0::2])
             odds = sum(b[1::2])
             if evens > odds:
-                b = b[1:]
+                b.pop(0)
             for i in range(len(b) // 2):
                 sample = (b[2 * i] << 8) | b[2 * i + 1]
                 if 1500 < sample < 2500:  # 0x1000:
@@ -72,7 +73,8 @@ def capture(n, timeout=0):
 
 # processing
 def removeDC(samps):
-    return [x - np.mean(samps) for x in samps]
+    mean = np.mean(samps)
+    return [x - mean for x in samps]
 
 def resamp(samps):
     # resample to 9 samples/bit
@@ -114,9 +116,10 @@ def filt(samps):
 
     pre = [samps[0]]*k
     post = [samps[-1]]*k
-    buffer = pre + samps + post
 
-    return [np.dot(COEF72, buffer[i:i+L])  for i in range(n)]
+    buffer = np.array(pre + samps + post)
+    coffs = np.array(COEF72)
+    return [np.dot(coffs, buffer[i:i+L])  for i in range(n)]
 
 def trim(samps):
     trip = np.mean([abs(x) for x in samps])/2
@@ -154,8 +157,8 @@ def comb(samps):
     n = 0
     start = 0
     while start < N:
-        i = inflect(samps[start:])
-        if n > 10:
+        i = inflect(samps[start:]) # find next bit flip
+        if n > 10: # skip the first 10 samples
             avg = start/n
             j = round(avg) - 1
             k = round(i/avg)
@@ -165,6 +168,7 @@ def comb(samps):
 
         n += k
 
+        # deal with multiple bits in a row
         value = samps[start]
         si = -1 if sign(value) else 1
         for z in range(k):
@@ -230,8 +234,11 @@ def view_waveforms(showbitz):
     n = (n + col - 1) // col
     if col > 1:
         fig, axs = plt.subplots(ncols=col, nrows=n)
-    else:
+    elif n > 1:
         fig, axs = plt.subplots(n)
+    else:
+        fig = plt.figure(tight_layout=True)
+        axs = fig.add_subplot()
 
     iwave = 0
     for j in range(col):
@@ -259,8 +266,9 @@ def view_waveforms(showbitz):
                 y = bits[x]
                 plot.text(x,y,notes[i+1])
 
-    inches = min(25, col * 2.5 * max(1,len(showbitz[0][0])/200))
-    fig.set_size_inches((inches,12)) # set width based on # of points
+    if showbitz:
+        inches = min(25, col * 2.5 * max(1,len(showbitz[0][0])/200))
+        fig.set_size_inches((inches,12)) # set width based on # of points
     # todo: factor in number of waveforms to generate 12
     plt.show()
 
@@ -282,9 +290,43 @@ def get_frames(n, timeout=0):
     return frames
 
 
+def process_metrics():
+    times = [(time.time(),'start')]
+    empty_capture()
+    times.append((time.time(), 'empty_capture'))
+    samples,title = capture(1)[0]
+    times.append((time.time(), 'capture'))
+    waveforms.dc = removeDC(samples)
+    times.append((time.time(), 'removeDC'))
+    waveforms.fft, waveforms.re = resamp(waveforms.dc)
+    times.append((time.time(), 'resamp'))
+    waveforms.fi = filt(waveforms.re)
+    times.append((time.time(), 'filt'))
+    waveforms.tr = trim(waveforms.fi)
+    times.append((time.time(), 'trim'))
+    waveforms.ha = comb(waveforms.tr)
+    times.append((time.time(), 'comb'))
+    waveforms.bits = clean(waveforms.ha)
+    times.append((time.time(), 'clean'))
+    waveforms.sy = sync(waveforms.bits)
+    times.append((time.time(), 'sync'))
+    waveforms.by, waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
+    times.append((time.time(), 'frame_bytes'))
+    start = times[0][0]
+    for end,process in times:
+        print(process, int((end - start)*1000), 'ms')
+        start = end
+    print('processing time: %i ms'%(1000*(times[-1][0] - times[2][0])))
+
+
 if __name__ == '__main__':
     stream = open_stream('/dev/cu.usbserial-FTVDZGTTA')
-    capture(1)
+
+    # process_metrics()
+    # stream.close()
+    # sys.exit(0)
+
+    waveforms.samps = capture(1)
     stream.close()
     showbitz = []
     for samples,title in waveforms.samps:
