@@ -121,18 +121,26 @@ def filt(samps):
     coffs = np.array(COEF72)
     return [np.dot(coffs, buffer[i:i+L])  for i in range(n)]
 
-def trim(samps):
-    trip = np.mean([abs(x) for x in samps])/2
-    start = 0
-    end = len(samps)
-    while abs(samps[start]) < trip:
-        start += 1
-    while abs(samps[end-1]) < trip/2:
-        end -= 1
-    return samps[start:end]
 
 def sign(n):
     return n < 0
+
+def trimmers(samps):
+    trip = np.mean([abs(x) for x in samps]) / 2
+    start = 0
+    end = len(samps) - 1
+    while abs(samps[start]) < trip:
+        start += 1
+    while abs(samps[end]) < trip:
+        end -= 1
+    se = sign(samps[end])
+    while sign(samps[end]) == se:  # last waveform crosses zero
+        end += 1
+    return start,end
+
+def trim(samps):
+    start,end = trimmers(samps)
+    return samps[start:end+1]
 
 def inflect(samps):
     try:
@@ -151,6 +159,14 @@ def inflect(samps):
     except:
         return len(samps)
 
+# replace with: average over agc until multibit sequence detected by 2;
+# change to framing sequence: use mean to map out future points
+# each point could be a median of local values if needed
+# 2: in find state, count inflections until steady state is reached
+# which is when mean is predicting inflections accurately. then hunt
+# mode begins looking for where a stretch of at least 3 bit share the same sign
+# this is the end of AGC and timing is set and now used to read all bits
+# after. this will yield times for agc and frame for test
 def comb(samps):
     N = len(samps)
     hair = []
@@ -288,6 +304,11 @@ def get_frames(n, timeout=0):
         frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
         frames.append(frame)
     return frames
+
+def frame_info(samples):
+    start,end = trimmers(filt(resamp(removeDC(samples))[1]))
+    frame = to_bytes(sync(clean(comb(samples[start,end+1]))))
+
 
 
 def process_metrics():
