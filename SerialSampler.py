@@ -134,8 +134,11 @@ def trimmers(samps):
     while abs(samps[end]) < trip:
         end -= 1
     se = sign(samps[end])
-    while sign(samps[end]) == se:  # last waveform crosses zero
-        end += 1
+    while end < len(samps) - 1:
+        if sign(samps[end]) == se  and  abs(samps[end]) > trip/2:  # last waveform crosses zero
+            end += 1
+        else:
+            break
     return start,end
 
 def trim(samps):
@@ -341,7 +344,7 @@ def process_metrics():
 
 
 if __name__ == '__main__':
-    stream = open_stream('/dev/cu.usbserial-FTVDZGTTA')
+    stream = open_stream('/dev/cu.usbserial-FT1Q5LVCB')
 
     # process_metrics()
     # stream.close()
