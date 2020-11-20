@@ -1,5 +1,5 @@
-from protocols.tlv_types import d as csi
-from protocols.tlv_types_blue_water import d as bw
+from .tlv_types import d as csi
+from .tlv_types_blue_water import d as bw
 
 d = bw
 d.update(csi)
