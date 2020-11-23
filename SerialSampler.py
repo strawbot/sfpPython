@@ -3,8 +3,8 @@
 # print(dir)
 # sys.path.append(dir)
 
-from pylibs.protocols.interface.serialHub import SerialPort
-from pylibs.protocols.interface.message import note
+from interface.serialHub import SerialPort
+from interface.message import note
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
