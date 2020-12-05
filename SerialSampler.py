@@ -365,6 +365,8 @@ if __name__ == '__main__':
     stream.close()
     showbitz = []
     for samples,title in waveforms.samps:
+        if samples == 0:
+            sys.exit("No samples to analyze")
         waveforms.dc = removeDC(samples)
         waveforms.fft,waveforms.re = resamp(waveforms.dc)
         waveforms.fi = filt(waveforms.re)
