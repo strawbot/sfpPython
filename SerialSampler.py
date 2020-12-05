@@ -375,14 +375,14 @@ if __name__ == '__main__':
         waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
 
         showbitz.append([samples, title])
-        # showbitz.append([waveforms.dc, title + ':dc removed'])
+        showbitz.append([waveforms.dc, title + ':dc removed'])
         showbitz.append(waveforms.fft)
-        # showbitz.append([waveforms.re, title + ':resampled'])
+        showbitz.append([waveforms.re, title + ':resampled'])
         showbitz.append([waveforms.fi, title + ':filtered'])
         showbitz.append([waveforms.tr, title + ':Trimmed'])
         showbitz.append([waveforms.ha, title + ':comb'])
         showbitz.append([waveforms.bits, title + ':bits'])
-        # showbitz.append([waveforms.sy, title + ':bit synced'])
+        showbitz.append([waveforms.sy, title + ':bit synced'])
         showbitz.append([waveforms.by, title + ':bytes', waveforms.bynotes])
 
     # sys.exit(0)
