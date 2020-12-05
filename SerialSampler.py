@@ -76,6 +76,19 @@ def removeDC(samps):
     mean = np.mean(samps)
     return [x - mean for x in samps]
 
+    # window = len(samps)//10  # how many segments to break up samples into determines windwo size
+    # k = window//2
+    # pre = [samps[0]]*k
+    # post = [samps[-1]]*(k + 1)
+    #
+    # buffer = np.array(pre + samps + post)
+    # sub = np.sum(buffer[:window])
+    # ac = []
+    # for i in range(len(samps)):
+    #     ac.append(samps[i] - sub/window)
+    #     sub = sub - buffer[i] + buffer[i+window]
+    # return ac
+
 def resamp(samps):
     # resample to 9 samples/bit
     OVERSAMPLE = 18
@@ -277,7 +290,9 @@ def view_waveforms(showbitz):
             if col > 1:
                 plot = plot[j]
 
-            plot.axis('off')
+            # plot.axis('off')
+            plot.get_yaxis().set_visible(True)
+            plot.get_xaxis().set_visible(False)
 
             if iwave == len(showbitz):
                 break
@@ -386,6 +401,21 @@ if __name__ == '__main__':
         showbitz.append([waveforms.bits, title + ':bits'])
         showbitz.append([waveforms.sy, title + ':bit synced'])
         showbitz.append([waveforms.by, title + ':bytes', waveforms.bynotes])
-
+        test_frame = [
+            # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
+            0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
+            0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
+            0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
+            0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
+            0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
+            0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
+            0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
+            0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
+        ]
+        print("check final result for content: ")
+        if waveforms.by == test_frame:
+            print("Pass")
+        else:
+            print("Fail")
     # sys.exit(0)
     view_waveforms(showbitz)
