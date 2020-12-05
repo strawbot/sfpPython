@@ -126,15 +126,26 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    trip = np.mean([abs(x) for x in samps]) / 2
+    l = len(samps)
+    trip = np.mean([abs(x) for x in samps[l//4:3*l//4]]) / 2
     start = 0
-    end = len(samps) - 1
+    last = len(samps) - 1
     while abs(samps[start]) < trip:
         start += 1
-    while abs(samps[end]) < trip:
-        end -= 1
+    end = start + 1
+    seq = 0
+    while end < last:
+        if abs(samps[end]) < trip:
+            seq += 1
+            if seq > 50:
+                end -= seq
+                break
+        else:
+            seq = 0
+        end += 1
+
     se = sign(samps[end])
-    while end < len(samps) - 1:
+    while end < last:
         if sign(samps[end]) == se  and  abs(samps[end]) > trip/2:  # last waveform crosses zero
             end += 1
         else:
