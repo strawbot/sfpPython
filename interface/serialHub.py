@@ -22,15 +22,18 @@ class SerialPort(Port):
         self.rate = 115200
 
     def run(self):
+        def getc():
+            c = self.port.read(1)
+            if len(c):
+                c += self.port.read(self.port.in_waiting)
+            return c
+
+        getc() # flush port after opening and before thread begins
         while self.is_open():
             try:
-                c = self.port.read(1)
+                c = getc()
                 if len(c):
-                    c += self.port.read(self.port.in_waiting)
                     self.output.emit(c)
-            # except IOError:
-            #     self.closePort()
-            #     note('Alert: device removed while open ')
             except Exception as e:
                 self.closePort()
                 error("run - serial port exception: %s" % e)
