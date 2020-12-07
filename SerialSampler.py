@@ -92,8 +92,8 @@ def removeDC(samps):
 def resamp(samps):
     # resample to 9 samples/bit
     OVERSAMPLE = 18
-    Fs = 35700
-    w = fft(samps)
+    Fs = 35800
+    w = fft(samps[50:len(samps)//4])
     freqs = np.fft.fftfreq(len(w))
     print('fmin:',freqs.min(), ' fmax:',freqs.max())
 
@@ -412,7 +412,7 @@ if __name__ == '__main__':
             0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
             0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
         ]
-        print("check final result for content: ")
+        print("check final result for expected content: ")
         if waveforms.by == test_frame:
             print("Pass")
         else:
