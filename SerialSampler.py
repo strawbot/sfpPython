@@ -12,6 +12,7 @@ import scipy.fftpack
 import matplotlib.pyplot as plt
 import time
 import tkinter
+import traceback
 
 root = tkinter.Tk()
 root.withdraw()
@@ -392,40 +393,45 @@ if __name__ == '__main__':
     for samples,title in waveforms.samps:
         if samples == 0:
             sys.exit("No samples to analyze")
-        waveforms.dc = removeDC(samples)
-        waveforms.fft,waveforms.re = resamp(waveforms.dc)
-        waveforms.fi = filt(waveforms.re)
-        waveforms.tr = trim(waveforms.fi)
-        waveforms.ha = comb(waveforms.tr)
-        waveforms.bits = clean(waveforms.ha)
-        waveforms.sy = sync(waveforms.bits)
-        waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
+        try:
+            showbitz.append([samples, title])
+            waveforms.dc = removeDC(samples)
+            showbitz.append([waveforms.dc, title + ':dc removed'])
+            waveforms.fft,waveforms.re = resamp(waveforms.dc)
+            showbitz.append(waveforms.fft)
+            showbitz.append([waveforms.re, title + ':resampled'])
+            waveforms.fi = filt(waveforms.re)
+            showbitz.append([waveforms.fi, title + ':filtered'])
+            waveforms.tr = trim(waveforms.fi)
+            showbitz.append([waveforms.tr, title + ':Trimmed'])
+            waveforms.ha = comb(waveforms.tr)
+            showbitz.append([waveforms.ha, title + ':comb'])
+            waveforms.bits = clean(waveforms.ha)
+            showbitz.append([waveforms.bits, title + ':bits'])
+            waveforms.sy = sync(waveforms.bits)
+            showbitz.append([waveforms.sy, title + ':bit synced'])
+            waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
+            showbitz.append([waveforms.by, title + ':bytes', waveforms.bynotes])
 
-        showbitz.append([samples, title])
-        showbitz.append([waveforms.dc, title + ':dc removed'])
-        showbitz.append(waveforms.fft)
-        showbitz.append([waveforms.re, title + ':resampled'])
-        showbitz.append([waveforms.fi, title + ':filtered'])
-        showbitz.append([waveforms.tr, title + ':Trimmed'])
-        showbitz.append([waveforms.ha, title + ':comb'])
-        showbitz.append([waveforms.bits, title + ':bits'])
-        showbitz.append([waveforms.sy, title + ':bit synced'])
-        showbitz.append([waveforms.by, title + ':bytes', waveforms.bynotes])
-        test_frame = [
-            # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
-            0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
-            0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
-            0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
-            0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
-            0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
-            0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
-            0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
-            0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
-        ]
-        print("check final result for expected content: ")
-        if waveforms.by == test_frame:
-            print("Pass")
-        else:
-            print("Fail")
+            test_frame = [
+                # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
+                0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
+                0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
+                0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
+                0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
+                0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
+                0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
+                0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
+                0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
+            ]
+            print("check final result for expected content: ")
+            if waveforms.by == test_frame:
+                print("Pass")
+            else:
+                print("Fail")
+        except ValueError as e:
+            print(e)
+            traceback.print_exc()
+
     # sys.exit(0)
     view_waveforms(showbitz)
