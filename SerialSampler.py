@@ -11,6 +11,12 @@ import numpy as np
 import scipy.fftpack
 import matplotlib.pyplot as plt
 import time
+import tkinter
+
+root = tkinter.Tk()
+root.withdraw()
+width_dots, height_dots = root.winfo_screenwidth(), root.winfo_screenheight()
+
 
 note('Serial Sampler V1')
 import sys,time
@@ -312,9 +318,11 @@ def view_waveforms(showbitz):
                 plot.text(x,y,notes[i+1])
 
     if showbitz:
-        inches = min(25, col * 2.5 * max(1,len(showbitz[0][0])/200))
-        fig.set_size_inches((inches,12)) # set width based on # of points
-    # todo: factor in number of waveforms to generate 12
+        dpival = fig.dpi
+        winch = .9 * width_dots / dpival
+        hinch = .9 * height_dots / dpival
+        fig.set_size_inches(winch, hinch, forward=False)
+
     plt.show()
 
 def open_stream(port, baudrate=1000000):
