@@ -3,8 +3,8 @@
 # print(dir)
 # sys.path.append(dir)
 
-from interface.serialHub import SerialPort as SerialPort
-from interface.message import note as note
+from alert2encoder.Alert2Encoder.Unit_tests.pylibs.protocols.interface.serialHub import SerialPort
+from alert2encoder.Alert2Encoder.Unit_tests.pylibs.protocols.interface.message import note
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
@@ -104,8 +104,10 @@ def resamp(samps):
     print('fmin:',freqs.min(), ' fmax:',freqs.max())
 
     # Find the peak in the coefficients
-    idx = np.argmax(np.abs(w))
+    idx = np.argmax(np.abs(w[1:]))
     f1 = abs(freqs[idx] * Fs)
+    if f1 == 0.0:
+        raise ValueError
     print('f prime:',f1)
 
     # FFT for plot
