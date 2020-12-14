@@ -10,90 +10,85 @@ from numpy.fft import fft as fft
 import numpy as np
 import scipy.fftpack
 import matplotlib.pyplot as plt
-import time
-import tkinter
-
-root = tkinter.Tk()
-root.withdraw()
-width_dots, height_dots = root.winfo_screenwidth(), root.winfo_screenheight()
-
+from matplotlib.widgets import Button
+import traceback
+from display_info import width_dots, height_dots
+import queue
+import sys,time
 
 note('Serial Sampler V1')
-import sys,time
 
 # gathering
 class Waves:
-    pass
+    def __init__(self):
+        self.sampleq = queue.Queue()
+        self.empty()
 
-samples = bytearray()
+    def empty(self):
+        self.sampleq.empty()
+        self.tstamp = time.time()
+        self.raw = bytearray()
+        self.samps = []
+        
+    def textout(self, b): # input is:  08 9F  two bytes for 12 bit ADC
+        self.sampleq.put((time.time(), bytearray(b)))
+    
+    def check_wad(self):
+        while True:
+            try:
+                self.last_ts, ba = self.sampleq.get(block=False)
+                self.raw.extend(ba)
+            except queue.Empty:
+                break
+
+    def add_samp(self, samp):
+        self.samps.append(samp)
+
+
+# capture waveforms from serial port
 waveforms = Waves()
-waveforms.samps = []
-tstamp = 0
 
-def textout(b): # input is:  08 9F  two bytes for 12 bit ADC
-    global tstamp
-    tstamp = time.time()
-    samples.extend(b)
+def capture(seconds=0): # move into waveforms class
+    end = time.time() + seconds
+    waveforms.empty()
+    while True:
+        waveforms.check_wad()
+        n = len(waveforms.raw)
+        if n > 100: # ignore noise
+            if time.time() - waveforms.last_ts < 1: # give extra time to get all the waveform
+                continue
 
-def check_wad():
-    if time.time() - tstamp > .3: # tstamp set in serial thread action
-        b = bytearray(samples) # pluck out current content possibly filled in by other thread
-        n = len(b)
-        samples[:n] = []  # data loss here unless edited carefully - likadis
-        if n > 100: # neglect orphans
-            waveform = []
-            evens = sum(b[0::2])
-            odds = sum(b[1::2])
+            raw = waveforms.raw
+
+            # make sure to start with 1st byte as 4 bits of 12
+            evens = np.sum(raw[0::2])
+            odds = np.sum(raw[1::2])
             if evens > odds:
-                b.pop(0)
-            for i in range(len(b) // 2):
-                sample = (b[2 * i] << 8) | b[2 * i + 1]
-                if 1500 < sample < 2500:  # 0x1000:
-                    waveform.append(sample)
+                raw.pop(0)
+                n -= 1
+
+            # combine bytes to make 12 bit samples
+            for i in range(n // 2):
+                sample = (raw[2 * i] << 8) | raw[2 * i + 1]
+                if sample < 0x1000: # ignore samples with more than 12 bits defined
+                    waveforms.add_samp(sample)
                 else:
                     print("bad sample (X): ", sample, hex(sample))
 
-            waveform[:50] = [] # delete noise
-            waveforms.samps.append([waveform, 'Waveform %i'%(len(waveforms.samps)+1)])
-            print("Added (samps): ", len(waveform))
-        elif n:
-            print('orphan bytes: ', n)
-
-# capture waveforms from serial port
-def empty_capture():
-    waveforms.samps[:] = []
-
-def capture(n, timeout=0):
-    while len(waveforms.samps) < n:
-        for i in range(10): # poll for a second
-            time.sleep(.1)
-            check_wad()
-        if timeout: # 0 is infinity
-            if timeout == 1: # check for timeout
+            print("Added (samps): ", len(waveforms.samps))
+            break
+        elif seconds:
+            if end > time.time():
                 break
-            timeout -= 1
+        else:
+            time.sleep(.01)
 
-    samps = list(waveforms.samps[:n])
-    waveforms.samps[:n] = []
-    return samps
+    return waveforms.samps
 
-# processing
+# processing: TODO: turn into processing class or transformer class
 def removeDC(samps):
     mean = np.mean(samps)
     return [x - mean for x in samps]
-
-    # window = len(samps)//10  # how many segments to break up samples into determines windwo size
-    # k = window//2
-    # pre = [samps[0]]*k
-    # post = [samps[-1]]*(k + 1)
-    #
-    # buffer = np.array(pre + samps + post)
-    # sub = np.sum(buffer[:window])
-    # ac = []
-    # for i in range(len(samps)):
-    #     ac.append(samps[i] - sub/window)
-    #     sub = sub - buffer[i] + buffer[i+window]
-    # return ac
 
 def resamp(samps):
     # resample to 9 samples/bit
@@ -273,6 +268,37 @@ def frame_bytes(bytes):
     print('alframe', alframe)
     return bytes,notes
 
+# repeat capture: turn into show class
+def capture_show():
+    fig, axs = waveforms.fig, waveforms.axs
+    print('axs capture:',axs)
+
+    samples = capture(10)
+    if samples:
+        dataset = [samples]
+        dataset.append(removeDC(dataset[-1]))
+        fft, data = resamp(dataset[-1])
+        dataset.append(fft[0])
+        dataset.append(data)
+        dataset.append(filt(dataset[-1]))
+        dataset.append(trim(dataset[-1]))
+        dataset.append(comb(dataset[-1]))
+        dataset.append(clean(dataset[-1]))
+        dataset.append(sync(dataset[-1]))
+        dataset.append(to_bytes(dataset[-1]))
+
+        for i in range(len(axs)):
+            data = dataset[i]
+            print('plot ',i,data[:10])
+            plot = axs[i]
+            plot.clear()
+            plot.plot(range(len(data)), data,
+                      marker='.', markersize=2.5,
+                      linestyle='-', linewidth=1)
+        fig.canvas.draw()
+    else:
+        print('No samples captured')
+
 # viewing
 def view_waveforms(showbitz):
     n = len(showbitz) # todo: add support for 1 or 0 waveforms
@@ -289,6 +315,9 @@ def view_waveforms(showbitz):
         fig = plt.figure(tight_layout=True)
         axs = fig.add_subplot()
 
+    waveforms.fig, waveforms.axs = fig,[]
+
+    print('axs initial:',axs)
     iwave = 0
     for j in range(col):
         for i in range(n):
@@ -296,6 +325,7 @@ def view_waveforms(showbitz):
             if col > 1:
                 plot = plot[j]
 
+            waveforms.axs.append(plot)
             # plot.axis('off')
             plot.get_yaxis().set_visible(True)
             plot.get_xaxis().set_visible(False)
@@ -307,6 +337,8 @@ def view_waveforms(showbitz):
             iwave += 1
             bits,title,notes = (*wave,[])  if  len(wave) == 2  else  wave
 
+            plot.clear()
+            print('plot ',i+j*5,bits[:10])
             plot.plot(range(len(bits)), bits,
                       marker='.',markersize=2.5,
                       linestyle='-', linewidth=1)
@@ -323,21 +355,32 @@ def view_waveforms(showbitz):
         hinch = .9 * height_dots / dpival
         fig.set_size_inches(winch, hinch, forward=False)
 
+    # add GUI
+    pos = plt.axes([0.475, 0.02, 0.05, 0.02]) # (left, bottom, width, height)
+    butt = Button(pos, "Capture", color='0.85', hovercolor='0.95')
+
+    class test(object):
+        def greet(self, event):
+            print("Capture...")
+            capture_show()
+            print("Plot")
+
+    callback = test()
+    butt.on_clicked(callback.greet)
     plt.show()
 
 def open_stream(port, baudrate=1000000):
     stream = SerialPort(port)
-    stream.output.connect(textout)
+    stream.output.connect(waveforms.textout)
     stream.open(rate=baudrate)
     return stream
 
 def get_frames(n, timeout=0):
-    empty_capture()
     frames = []
     while n:
         print(n)
         n -= 1
-        samples,title = capture(1, timeout)[0]
+        samples = capture(timeout)
         frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
         frames.append(frame)
     return frames
@@ -347,12 +390,10 @@ def frame_info(samples):
     frame = to_bytes(sync(clean(comb(samples[start,end+1]))))
 
 
-
 def process_metrics():
     times = [(time.time(),'start')]
-    empty_capture()
     times.append((time.time(), 'empty_capture'))
-    samples,title = capture(1)[0]
+    samples,title = capture()
     times.append((time.time(), 'capture'))
     waveforms.dc = removeDC(samples)
     times.append((time.time(), 'removeDC'))
@@ -384,31 +425,30 @@ if __name__ == '__main__':
     # stream.close()
     # sys.exit(0)
 
-    waveforms.samps = capture(1)
-    stream.close()
+    samples = capture()
     showbitz = []
-    for samples,title in waveforms.samps:
-        if samples == 0:
-            sys.exit("No samples to analyze")
-        waveforms.dc = removeDC(samples)
-        waveforms.fft,waveforms.re = resamp(waveforms.dc)
-        waveforms.fi = filt(waveforms.re)
-        waveforms.tr = trim(waveforms.fi)
-        waveforms.ha = comb(waveforms.tr)
-        waveforms.bits = clean(waveforms.ha)
-        waveforms.sy = sync(waveforms.bits)
-        waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
 
-        showbitz.append([samples, title])
-        showbitz.append([waveforms.dc, title + ':dc removed'])
+    if samples == 0:
+        sys.exit("No samples to analyze")
+    try:
+        showbitz.append([samples, 'raw'])
+        waveforms.dc = removeDC(samples)
+        showbitz.append([waveforms.dc, 'dc removed'])
+        waveforms.fft,waveforms.re = resamp(waveforms.dc)
         showbitz.append(waveforms.fft)
-        showbitz.append([waveforms.re, title + ':resampled'])
-        showbitz.append([waveforms.fi, title + ':filtered'])
-        showbitz.append([waveforms.tr, title + ':Trimmed'])
-        showbitz.append([waveforms.ha, title + ':comb'])
-        showbitz.append([waveforms.bits, title + ':bits'])
-        showbitz.append([waveforms.sy, title + ':bit synced'])
-        showbitz.append([waveforms.by, title + ':bytes', waveforms.bynotes])
+        showbitz.append([waveforms.re, 'resampled'])
+        waveforms.fi = filt(waveforms.re)
+        showbitz.append([waveforms.fi, 'filtered'])
+        waveforms.tr = trim(waveforms.fi)
+        showbitz.append([waveforms.tr, 'Trimmed'])
+        waveforms.ha = comb(waveforms.tr)
+        showbitz.append([waveforms.ha, 'comb'])
+        waveforms.bits = clean(waveforms.ha)
+        showbitz.append([waveforms.bits, 'bits'])
+        waveforms.sy = sync(waveforms.bits)
+        showbitz.append([waveforms.sy, 'bit synced'])
+        waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
+        showbitz.append([waveforms.by, 'bytes', waveforms.bynotes])
         test_frame = [
             # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
             0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
@@ -425,5 +465,9 @@ if __name__ == '__main__':
             print("Pass")
         else:
             print("Fail")
-    # sys.exit(0)
+    except Exception as e:
+        print(e, file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+
     view_waveforms(showbitz)
+    stream.close()
