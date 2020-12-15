@@ -269,35 +269,63 @@ def frame_bytes(bytes):
     return bytes,notes
 
 # repeat capture: turn into show class
+def clear_lines():
+    while waveforms.lines:
+        line = waveforms.lines.pop()
+        line.pop(0).remove()
+        del line
+    while waveforms.texts:
+        text = waveforms.texts.pop()
+        text.remove()
+        del text
+
 def capture_show():
     fig, axs = waveforms.fig, waveforms.axs
     print('axs capture:',axs)
+    clear_lines()
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    time.sleep(.1)
 
-    samples = capture(10)
+    samples = capture()
     if samples:
         dataset = [samples]
         dataset.append(removeDC(dataset[-1]))
         fft, data = resamp(dataset[-1])
-        dataset.append(fft[0])
+        dataset.append(fft[0::2])
         dataset.append(data)
         dataset.append(filt(dataset[-1]))
         dataset.append(trim(dataset[-1]))
         dataset.append(comb(dataset[-1]))
         dataset.append(clean(dataset[-1]))
         dataset.append(sync(dataset[-1]))
-        dataset.append(to_bytes(dataset[-1]))
+        dataset.append(frame_bytes(to_bytes(dataset[-1])))
+
+        print("check final result for expected content: ")
+        if test_frame == dataset[-1][0]:
+            print("Pass")
+        else:
+            print("Fail")
 
         for i in range(len(axs)):
             data = dataset[i]
             print('plot ',i,data[:10])
             plot = axs[i]
-            plot.clear()
-            plot.plot(range(len(data)), data,
-                      marker='.', markersize=2.5,
-                      linestyle='-', linewidth=1)
+            if len(data) == 2:
+                data,notes = data
+                for i in range(0, len(notes), 2):
+                    x = notes[i]
+                    y = data[x]
+                    waveforms.texts.append(plot.text(x, y, notes[i + 1]))
+
+            waveforms.lines.append(plot.plot(range(len(data)), data,
+                      marker='.', markersize=2.5, color='blue',
+                      linestyle='-', linewidth=1))
+
         fig.canvas.draw()
     else:
         print('No samples captured')
+
 
 # viewing
 def view_waveforms(showbitz):
@@ -319,6 +347,8 @@ def view_waveforms(showbitz):
 
     print('axs initial:',axs)
     iwave = 0
+    waveforms.lines = []
+    waveforms.texts = []
     for j in range(col):
         for i in range(n):
             plot = axs[i]
@@ -339,15 +369,15 @@ def view_waveforms(showbitz):
 
             plot.clear()
             print('plot ',i+j*5,bits[:10])
-            plot.plot(range(len(bits)), bits,
-                      marker='.',markersize=2.5,
-                      linestyle='-', linewidth=1)
+            waveforms.lines.append(plot.plot(range(len(bits)), bits,
+                      marker='.',markersize=2.5, color='blue',
+                      linestyle='-', linewidth=1))
             plt.subplots_adjust(left=0.02, right=0.98, top=0.95, bottom=0.05)
             plot.set_title(title)
             for i in range(0,len(notes),2):
                 x = notes[i]
                 y = bits[x]
-                plot.text(x,y,notes[i+1])
+                waveforms.texts.append(plot.text(x,y,notes[i+1]))
 
     if showbitz:
         dpival = fig.dpi
