@@ -99,8 +99,10 @@ def resamp(samps):
     print('fmin:',freqs.min(), ' fmax:',freqs.max())
 
     # Find the peak in the coefficients
-    idx = np.argmax(np.abs(w))
+    idx = np.argmax(np.abs(w[1:]))
     f1 = abs(freqs[idx] * Fs)
+    if f1 == 0.0:
+        raise ValueError
     print('f prime:',f1)
 
     # FFT for plot
@@ -281,13 +283,13 @@ def clear_lines():
 
 def capture_show():
     fig, axs = waveforms.fig, waveforms.axs
-    print('axs capture:',axs)
     clear_lines()
     fig.canvas.draw()
     fig.canvas.flush_events()
     time.sleep(.1)
 
     samples = capture()
+    print("Transforming...")
     if samples:
         dataset = [samples]
         dataset.append(removeDC(dataset[-1]))
@@ -301,15 +303,10 @@ def capture_show():
         dataset.append(sync(dataset[-1]))
         dataset.append(frame_bytes(to_bytes(dataset[-1])))
 
-        print("check final result for expected content: ")
-        if test_frame == dataset[-1][0]:
-            print("Pass")
-        else:
-            print("Fail")
+        verify(dataset[-1][0])
 
         for i in range(len(axs)):
             data = dataset[i]
-            print('plot ',i,data[:10])
             plot = axs[i]
             if len(data) == 2:
                 data,notes = data
@@ -344,8 +341,6 @@ def view_waveforms(showbitz):
         axs = fig.add_subplot()
 
     waveforms.fig, waveforms.axs = fig,[]
-
-    print('axs initial:',axs)
     iwave = 0
     waveforms.lines = []
     waveforms.texts = []
@@ -368,7 +363,6 @@ def view_waveforms(showbitz):
             bits,title,notes = (*wave,[])  if  len(wave) == 2  else  wave
 
             plot.clear()
-            print('plot ',i+j*5,bits[:10])
             waveforms.lines.append(plot.plot(range(len(bits)), bits,
                       marker='.',markersize=2.5, color='blue',
                       linestyle='-', linewidth=1))
@@ -419,6 +413,23 @@ def frame_info(samples):
     start,end = trimmers(filt(resamp(removeDC(samples))[1]))
     frame = to_bytes(sync(clean(comb(samples[start,end+1]))))
 
+def verify(frame):
+    test_frame = [
+        # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
+        0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
+        0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
+        0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
+        0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
+        0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
+        0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
+        0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
+        0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
+    ]
+    test = "check final result for expected content: "
+    if frame == test_frame:
+        print(test + "Pass")
+    else:
+        print(test + "Fail")
 
 def process_metrics():
     times = [(time.time(),'start')]
@@ -479,22 +490,7 @@ if __name__ == '__main__':
         showbitz.append([waveforms.sy, 'bit synced'])
         waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
         showbitz.append([waveforms.by, 'bytes', waveforms.bynotes])
-        test_frame = [
-            # consider how to send this with cli. perhaps the air command or frame: or frame building tools: empty append
-            0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
-            0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
-            0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
-            0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
-            0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
-            0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
-            0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
-            0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
-        ]
-        print("check final result for expected content: ")
-        if waveforms.by == test_frame:
-            print("Pass")
-        else:
-            print("Fail")
+        verify(waveforms.by)
     except Exception as e:
         print(e, file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
