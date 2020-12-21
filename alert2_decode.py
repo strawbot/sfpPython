@@ -4,6 +4,8 @@ import numpy as np
 
 t = bw
 t.update(csi)
+header = 'AL22b'
+
 '''
 use decode to get initial length and drill down using recurse
 put a try/except around decode so when decoding fails, it can report to that point and flag the decode issue
@@ -14,40 +16,23 @@ class checkAlert2():
         self.times = []
 
     def __call__(self, start, end, text):
-        header = 'AL22b'
         self.flow += text
         step = (end - start) / len(text)
         tstamp = [int(t) for t in np.arange(start, end, step)] if step else [start]
-        print ('Check',start, end, text, tstamp)
         self.times += tstamp
+        print ('Check:', start, end, text, tstamp)
+
         report = ''
-        # decoders
-        def xnum(pdu):  # return 7 bit number or 15 bit number if first bit is high; plus remainder
-            num = pdu[0]
-            if num & 0x80:
-                num = ((num & 0x7F) << 8) + pdu[1]
-                return (pdu[2:], num)
-            return (pdu[1:], num)
-
-        def decode(flow):
-            if len(flow) == 0:
-                return ''
-            pdu, type = xnum(flow)
-            pdu, tlv_length = xnum(pdu)
-
-            defn = t.get(type, '--')
-            value = value_decode(type, pdu[:tlv_length])
-            recurse = decode(pdu[tlv_length:])
-            return ' {:0>2x}{} {}[ {} {} ]'.format(type, '{' + defn + '}', tlv_length, value, recurse)
-
-        query = bytearray(list(map(ord, header)))
+        query = bytearray(header, 'utf-8')
         qlength = len(query)
-        while len(self.flow) >= qlength + 2:
+
+        while len(self.flow) >= qlength + 2: # check for header and 2byte length
             index = self.flow.find(query)
             if index == 0: # found beginning of frame at beginning
-                pdu, length = xnum(self.flow[qlength:])
-                if len(pdu) < length: # check frame complete
-                    return
+                pdu, length = xnum_bin(self.flow[qlength:])
+                if length == 0 or len(pdu) < length:
+                    return # there is no frame yet
+                print('pdu,len',pdu, length)
                 report = decode(pdu[:length])
                 self.flow = pdu[length:]
             elif index > 0: # remove stuff before frame
@@ -74,6 +59,32 @@ def hexString(s):
 
 def hexscii(s):
     return bytearray.fromhex(s).decode('utf-8', 'replace')
+
+
+# decoders
+def xnum_bin(pdu):  # return 7 bit number or 15 bit number if first bit is high; plus remaining
+    if pdu[0] & 0x80:
+        return (pdu[2:], ((pdu[0] & 0x7F) << 8) + pdu[1])
+    return pdu[1:], pdu[0]
+
+
+def decode_tlv(tlv):
+    rest, type = xnum_bin(tlv)
+    rest, tlv_length = xnum_bin(rest)
+    defn = t.get(type, '--')
+    value = value_decode(type, rest[:tlv_length])
+    report = '{:0>2x}{{{}}} {}[{}]'.format(type, defn, tlv_length, value)
+    return report, rest[tlv_length:]
+
+def decode(flow):
+    n = len(flow)
+    if n == 0:
+        return ''
+    report, flow = decode_tlv(flow)
+    while flow:
+        text, flow = decode_tlv(flow)
+        report += ' ' + text
+    return '{}[{}]'.format(n, report)
 
 # decodes
 def value_decode(type, pdu):
@@ -102,8 +113,19 @@ def boolean(wool):
 def string(wool):
     return hexscii(wool)
 
+def setparams(wool):
+    report = ''
+    while wool:
+        text, wool = decode_tlv(wool)
+        report += text
+    return report
+
+def getparams(wool):
+    return ' '.join('{:0>2x}{{{}}}'.format(type, t.get(type, '--')) for type in wool)
+
 # decoders
-def xnum(pdu): # return 7 bit number or 15 bit number if first bit is high; plus remainder
+# need to protect against bad decoding and then remove data still in stream
+def xnum_hex(pdu): # return 7 bit number or 15 bit number if first bit is high; plus remainder
     num = int(pdu[:2], 16)
     if num & 0x80:
         num = ((num&0x7F)<<8) + int(pdu[2:4], 16)
@@ -119,15 +141,15 @@ class alert1():
         return hexscii(self.pdu)
 
 class alert2(alert1):
-    query = hexString("AL22b")
+    query = hexString(header)
     length = len(query)
 
     def decode(self): # "414C44525432..."
         print (self.pdu)
         if len(self.pdu) == 0:
             return 'empty PDU'
-        pdu, type = xnum(self.pdu)
-        pdu,tlv_length = xnum(pdu)
+        pdu, type = xnum_hex(self.pdu)
+        pdu,tlv_length = xnum_hex(pdu)
 
         defn = t.get(type,'--')
         value = value_decode(type, pdu)
@@ -142,8 +164,8 @@ v = {}
 v[0] = lambda wool : 'Application PDU{' + hex_by2(wool) + '}'
 
 
-
-
+v[10] = setparams
+v[11] = getparams
 
 
 
@@ -251,4 +273,6 @@ v[4120] = string
 v[4121] = string
 v[4122] = string
 v[4123] = string
+
+
 
