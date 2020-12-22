@@ -3,8 +3,8 @@
 # print(dir)
 # sys.path.append(dir)
 
-from interface.serialHub import SerialPort as SerialPort
-from interface.message import note as note
+from alert2encoder.Alert2Encoder.Unit_tests.pylibs.protocols.interface.serialHub import SerialPort as SerialPort
+from alert2encoder.Alert2Encoder.Unit_tests.pylibs.protocols.interface.message import note as note
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
@@ -12,7 +12,7 @@ import scipy.fftpack
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import traceback
-from display_info import width_dots, height_dots
+from alert2encoder.Alert2Encoder.Unit_tests.pylibs.protocols.display_info import width_dots, height_dots
 import queue
 import sys,time
 
