@@ -84,7 +84,7 @@ def capture(seconds=0): # move into waveforms class
             print("Added (samps): ", len(waveforms.samps))
             break
         elif seconds:
-            if end > time.time():
+            if time.time() > end:
                 break
         else:
             time.sleep(.01)
@@ -411,8 +411,9 @@ def get_frames(n, timeout=0):
         print(n)
         n -= 1
         samples = capture(timeout)
-        frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
-        frames.append(frame)
+        if samples:
+            frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
+            frames.append(frame)
     return frames
 
 def frame_info(samples):
