@@ -170,25 +170,27 @@ def trimmers(samps):
     half = max(qq)/2
     start = 0
     end = len(qq)
-    found = False
+    found = 0
     for i in range(end):
         if found:
-            if qq[i] < half:
-                start = (start + i)//2
+            if qq[i] > found:
+                start = i
+                found = qq[i]
+            else:
                 break
         elif qq[i] > half:
-            start = i
-            found = True
+            found = qq[i]
 
-    found = False
+    found = 0
     for i in range(end-1,-1,-1):
         if found:
-            if qq[i] < half:
-                end = (end + i)//2
+            if qq[i] > found:
+                end = i
+                found = qq[i]
+            else:
                 break
         elif qq[i] > half:
-            end = i
-            found = True
+            found = qq[i]
 
     return start,end
 
@@ -342,6 +344,8 @@ def capture_show():
             waveforms.lines.append(plot.plot(range(len(data)), data,
                       marker='.', markersize=2.5, color='blue',
                       linestyle='-', linewidth=1))
+        plot.relim()
+        plot.autoscale_view(True,True,True)
 
         fig.canvas.draw()
     else:
