@@ -97,7 +97,10 @@ def removeDC(samps):
     mean = np.mean(samps)
     return [x - mean for x in samps]
 
+sample_rate = 0.0
+
 def resamp(samps):
+    global sample_rate
     # resample to 9 samples/bit
     OVERSAMPLE = 18
     Fs = 2400*15 # samples counted on agc peak to peak
@@ -120,6 +123,7 @@ def resamp(samps):
     # f1 = fmax*OVERSAMPLE*2
     fftre = [fftresamp,'FFT',[fftresamp.index(fmax),' Fmax = %iHz'%int(f1)]]
     Frs = f1*OVERSAMPLE*2 #43200 * 2
+    sample_rate = Frs
     resamps = list(signal.resample(samps, int(len(samps) * Frs / Fs)))
 
     return fftre,resamps
@@ -434,7 +438,7 @@ def get_frames(n, timeout=0):
         n -= 1
         samples = capture(timeout)
         if samples:
-            frame = to_bytes(sync(clean(comb(trim(filt(resamp(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
+            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
             frames.append(frame)
     return frames
 
