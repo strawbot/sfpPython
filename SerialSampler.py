@@ -15,6 +15,7 @@ else:
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
+import scipy as sp
 import scipy.fftpack
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -99,7 +100,7 @@ def removeDC(samps):
 def resamp(samps):
     # resample to 9 samples/bit
     OVERSAMPLE = 18
-    Fs = 35800
+    Fs = 2400*15 # samples counted on agc peak to peak
     w = fft(samps[50:len(samps)//4])
     freqs = np.fft.fftfreq(len(w))
     print('fmin:',freqs.min(), ' fmax:',freqs.max())
@@ -115,10 +116,12 @@ def resamp(samps):
     N = len(samps)
     yf = scipy.fftpack.fft(samps)
     fftresamp = list(2.0 / N * np.abs(yf[:N // 2]))
-    index = fftresamp.index(max(fftresamp))
-    fftre = [fftresamp,'FFT',[index,' Fmax = %iHz'%int(f1)]]
+    fmax = max(fftresamp)
+    # f1 = fmax*OVERSAMPLE*2
+    fftre = [fftresamp,'FFT',[fftresamp.index(fmax),' Fmax = %iHz'%int(f1)]]
     Frs = f1*OVERSAMPLE*2 #43200 * 2
     resamps = list(signal.resample(samps, int(len(samps) * Frs / Fs)))
+
     return fftre,resamps
 
 def filt(samps):
@@ -148,30 +151,45 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    l = len(samps)
-    trip = np.mean([abs(x) for x in samps[l//4:3*l//4]]) / 2
-    start = 0
-    last = len(samps) - 1
-    while abs(samps[start]) < trip:
-        start += 1
-    end = start + 1
-    seq = 0
-    while end < last:
-        if abs(samps[end]) < trip:
-            seq += 1
-            if seq > 50:
-                end -= seq
-                break
-        else:
-            seq = 0
-        end += 1
+    ss = [x**2 for x in samps]
+    width = 50
+    pre = [ss[0]]*width
+    post = [ss[-1]]*(width+1)
+    pp = pre + ss + post
+    qq = []
+    before = sum(pp[:width])
+    after = sum(pp[1 + width:1 + width * 2])
+    for i in range(len(ss)):
+        # before = sum(pp[i:i+width])
+        # after = sum(pp[i+1+width:i+1+width*2])
+        # qq.append(before/(after+1) + after/(before+1)) # energy ratio
+        qq.append((before-after)**2) # edge
+        before += pp[i+width] - pp[i]
+        after += pp[i+1+width*2] - pp[i+1+width]
 
-    se = sign(samps[end])
-    while end < last:
-        if sign(samps[end]) == se  and  abs(samps[end]) > trip/2:  # last waveform crosses zero
-            end += 1
-        else:
-            break
+    half = max(qq)/2
+    start = 0
+    end = len(qq)
+    found = False
+    for i in range(end):
+        if found:
+            if qq[i] < half:
+                start = (start + i)//2
+                break
+        elif qq[i] > half:
+            start = i
+            found = True
+
+    found = False
+    for i in range(end-1,-1,-1):
+        if found:
+            if qq[i] < half:
+                end = (end + i)//2
+                break
+        elif qq[i] > half:
+            end = i
+            found = True
+
     return start,end
 
 def trim(samps):
@@ -299,11 +317,11 @@ def capture_show():
     if samples:
         dataset = [samples]
         dataset.append(removeDC(dataset[-1]))
+        dataset.append(trim(dataset[-1]))
         fft, data = resamp(dataset[-1])
         dataset.append(fft[0::2])
         dataset.append(data)
         dataset.append(filt(dataset[-1]))
-        dataset.append(trim(dataset[-1]))
         dataset.append(comb(dataset[-1]))
         dataset.append(clean(dataset[-1]))
         dataset.append(sync(dataset[-1]))
@@ -482,14 +500,14 @@ if __name__ == '__main__':
         showbitz.append([samples, 'raw'])
         waveforms.dc = removeDC(samples)
         showbitz.append([waveforms.dc, 'dc removed'])
-        waveforms.fft,waveforms.re = resamp(waveforms.dc)
+        waveforms.tr = trim(waveforms.dc)
+        showbitz.append([waveforms.tr, 'Trimmed'])
+        waveforms.fft,waveforms.re = resamp(waveforms.tr)
         showbitz.append(waveforms.fft)
         showbitz.append([waveforms.re, 'resampled'])
         waveforms.fi = filt(waveforms.re)
         showbitz.append([waveforms.fi, 'filtered'])
-        waveforms.tr = trim(waveforms.fi)
-        showbitz.append([waveforms.tr, 'Trimmed'])
-        waveforms.ha = comb(waveforms.tr)
+        waveforms.ha = comb(waveforms.fi)
         showbitz.append([waveforms.ha, 'comb'])
         waveforms.bits = clean(waveforms.ha)
         showbitz.append([waveforms.bits, 'bits'])
