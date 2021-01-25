@@ -164,9 +164,6 @@ def trimmers(samps):
     before = sum(pp[:width])
     after = sum(pp[1 + width:1 + width * 2])
     for i in range(len(ss)):
-        # before = sum(pp[i:i+width])
-        # after = sum(pp[i+1+width:i+1+width*2])
-        # qq.append(before/(after+1) + after/(before+1)) # energy ratio
         qq.append((before-after)**2) # edge
         before += pp[i+width] - pp[i]
         after += pp[i+1+width*2] - pp[i+1+width]
@@ -335,9 +332,8 @@ def capture_show():
 
         verify(dataset[-1][0])
 
-        for i in range(len(axs)):
+        for i, plot in enumerate(axs):
             data = dataset[i]
-            plot = axs[i]
             if len(data) == 2:
                 data,notes = data
                 for i in range(0, len(notes), 2):
@@ -438,13 +434,13 @@ def get_frames(n, timeout=0):
         n -= 1
         samples = capture(timeout)
         if samples:
-            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples)))[1]))))) # need to do this in capture or in second thread pass through with a queue
+            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
             frames.append(frame)
     return frames
 
 def frame_info(samples):
-    start,end = trimmers(filt(resamp(removeDC(samples))[1]))
-    frame = to_bytes(sync(clean(comb(samples[start,end+1]))))
+    start,end = trimmers(removeDC(samples))
+    frame = to_bytes(sync(clean(comb(filt(resamp(samples[start,end+1]))[1]))))
 
 def verify(frame):
     test_frame = [
@@ -471,13 +467,13 @@ def process_metrics():
     times.append((time.time(), 'capture'))
     waveforms.dc = removeDC(samples)
     times.append((time.time(), 'removeDC'))
-    waveforms.fft, waveforms.re = resamp(waveforms.dc)
+    waveforms.tr = trim(waveforms.dc)
+    times.append((time.time(), 'trim'))
+    waveforms.fft, waveforms.re = resamp(waveforms.tr)
     times.append((time.time(), 'resamp'))
     waveforms.fi = filt(waveforms.re)
     times.append((time.time(), 'filt'))
-    waveforms.tr = trim(waveforms.fi)
-    times.append((time.time(), 'trim'))
-    waveforms.ha = comb(waveforms.tr)
+    waveforms.ha = comb(waveforms.fi)
     times.append((time.time(), 'comb'))
     waveforms.bits = clean(waveforms.ha)
     times.append((time.time(), 'clean'))
