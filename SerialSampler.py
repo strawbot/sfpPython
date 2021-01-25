@@ -438,7 +438,7 @@ def get_frames(n, timeout=0):
         n -= 1
         samples = capture(timeout)
         if samples:
-            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
+            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples)))[1]))))) # need to do this in capture or in second thread pass through with a queue
             frames.append(frame)
     return frames
 
