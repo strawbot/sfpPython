@@ -29,6 +29,7 @@ note('Serial Sampler V1')
 class Waves:
     def __init__(self):
         self.sampleq = queue.Queue()
+        self.sample_rate = 0
         self.empty()
 
     def empty(self):
@@ -50,6 +51,12 @@ class Waves:
 
     def add_samp(self, samp):
         self.samps.append(samp)
+
+    def get_sample_rate(self):
+        return self.sample_rate
+
+    def set_sample_rate(self, rate):
+        self.sample_rate = rate
 
 
 # capture waveforms from serial port
@@ -123,7 +130,7 @@ def resamp(samps):
     # f1 = fmax*OVERSAMPLE*2
     fftre = [fftresamp,'FFT',[fftresamp.index(fmax),' Fmax = %iHz'%int(f1)]]
     Frs = f1*OVERSAMPLE*2 #43200 * 2
-    sample_rate = Frs
+    waveforms.set_sample_rate(Frs)
     resamps = list(signal.resample(samps, int(len(samps) * Frs / Fs)))
 
     return fftre,resamps
