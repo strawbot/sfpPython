@@ -30,6 +30,8 @@ class Waves:
     def __init__(self):
         self.sampleq = queue.Queue()
         self.sample_rate = 0
+        self.carrier_length = 0
+        self.rftail_legnth = 0
         self.empty()
 
     def empty(self):
@@ -57,6 +59,18 @@ class Waves:
 
     def set_sample_rate(self, rate):
         self.sample_rate = rate
+
+    def get_carrier_length(self):
+        return self.carrier_length
+
+    def set_carrier_length(self, num):
+        self.carrier_length = num
+
+    def get_rftail_length(self):
+        return self.rftail_legnth
+
+    def set_rftail_length(self, num):
+        self.rftail_legnth = num
 
 
 # capture waveforms from serial port
@@ -204,6 +218,8 @@ def trimmers(samps):
 
 def trim(samps):
     start,end = trimmers(samps)
+    waveforms.set_carrier_length(start)
+    waveforms.set_rftail_length(len(samps) - end)
     return samps[start:end+1]
 
 def inflect(samps):
