@@ -27,9 +27,11 @@ note('Serial Sampler V1')
 
 # gathering
 class Waves:
+
     def __init__(self):
         self.sampleq = queue.Queue()
-        self.sample_rate = 0
+        self.raw_sample_rate = 0
+        self.resamp_rate = 0
         self.carrier_length = 0
         self.rftail_legnth = 0
         self.empty()
@@ -39,6 +41,10 @@ class Waves:
         self.tstamp = time.time()
         self.raw = bytearray()
         self.samps = []
+        self.raw_sample_rate = 0
+        self.resamp_rate = 0
+        self.carrier_length = 0
+        self.rftail_legnth = 0
         
     def textout(self, b): # input is:  08 9F  two bytes for 12 bit ADC
         self.sampleq.put((time.time(), bytearray(b)))
@@ -54,11 +60,17 @@ class Waves:
     def add_samp(self, samp):
         self.samps.append(samp)
 
-    def get_sample_rate(self):
-        return self.sample_rate
+    def get_raw_sample_rate(self):
+        return self.raw_sample_rate
 
-    def set_sample_rate(self, rate):
-        self.sample_rate = rate
+    def set_raw_sample_rate(self, rate):
+        self.raw_sample_rate = 1/rate # Invert for number of samples per 1 second
+
+    def get_resamp_rate(self):
+        return self.resamp_rate
+
+    def set_resamp_rate(self, rate):
+        self.resamp_rate = 1/rate # Invert for number of samples per 1 second
 
     def get_carrier_length(self):
         return self.carrier_length
@@ -118,13 +130,12 @@ def removeDC(samps):
     mean = np.mean(samps)
     return [x - mean for x in samps]
 
-sample_rate = 0.0
 
 def resamp(samps):
-    global sample_rate
     # resample to 9 samples/bit
     OVERSAMPLE = 18
     Fs = 2400*15 # samples counted on agc peak to peak
+    waveforms.set_raw_sample_rate(Fs) # Capture sample rate before resampling
     w = fft(samps[50:len(samps)//4])
     freqs = np.fft.fftfreq(len(w))
     print('fmin:',freqs.min(), ' fmax:',freqs.max())
@@ -144,7 +155,7 @@ def resamp(samps):
     # f1 = fmax*OVERSAMPLE*2
     fftre = [fftresamp,'FFT',[fftresamp.index(fmax),' Fmax = %iHz'%int(f1)]]
     Frs = f1*OVERSAMPLE*2 #43200 * 2
-    waveforms.set_sample_rate(Frs)
+    waveforms.set_resamp_rate(Frs) # Capture sample rate after resampling
     resamps = list(signal.resample(samps, int(len(samps) * Frs / Fs)))
 
     return fftre,resamps
