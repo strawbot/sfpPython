@@ -33,7 +33,8 @@ class Waves:
         self.raw_sample_rate = 0
         self.resamp_rate = 0
         self.carrier_length = 0
-        self.rftail_legnth = 0
+        self.rftail_length = 0
+        self.fmax = 0
         self.empty()
 
     def empty(self):
@@ -44,7 +45,8 @@ class Waves:
         self.raw_sample_rate = 0
         self.resamp_rate = 0
         self.carrier_length = 0
-        self.rftail_legnth = 0
+        self.rftail_length = 0
+        self.fmax = 0
         
     def textout(self, b): # input is:  08 9F  two bytes for 12 bit ADC
         self.sampleq.put((time.time(), bytearray(b)))
@@ -79,10 +81,17 @@ class Waves:
         self.carrier_length = num
 
     def get_rftail_length(self):
-        return self.rftail_legnth
+        return self.rftail_length
 
     def set_rftail_length(self, num):
-        self.rftail_legnth = num
+        self.rftail_length = num
+
+    def set_fmax(self, num):
+        self.fmax = 1/num # Also invert for samples/second
+
+    def get_fmax(self):
+        return self.fmax
+
 
 
 # capture waveforms from serial port
@@ -142,10 +151,11 @@ def resamp(samps):
 
     # Find the peak in the coefficients
     idx = np.argmax(np.abs(w[1:]))
-    f1 = abs(freqs[idx] * Fs)
+    f1 = abs(freqs[idx] * Fs) # Sample rate for sync
     if f1 == 0.0:
         raise ValueError
     print('f prime:',f1)
+    waveforms.set_fmax(f1 * 2)
 
     # FFT for plot
     N = len(samps)
