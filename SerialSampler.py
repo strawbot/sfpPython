@@ -16,6 +16,8 @@ from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
 import scipy as sp
+import pandas as pd
+from scipy.signal import find_peaks
 import scipy.fftpack
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
@@ -197,45 +199,12 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    ss = [x**2 for x in samps]
-    width = 50
-    pre = [ss[0]]*width
-    post = [ss[-1]]*(width+1)
-    pp = pre + ss + post
-    qq = []
-    before = sum(pp[:width])
-    after = sum(pp[1 + width:1 + width * 2])
-    for i in range(len(ss)):
-        qq.append((before-after)**2) # edge
-        before += pp[i+width] - pp[i]
-        after += pp[i+1+width*2] - pp[i+1+width]
-
-    half = max(qq)/2
-    start = 0
-    end = len(qq)
-    found = 0
-    for i in range(end):
-        if found:
-            if qq[i] > found:
-                start = i
-                found = qq[i]
-            else:
-                break
-        elif qq[i] > half:
-            found = qq[i]
-
-    found = 0
-    for i in range(end-1,-1,-1):
-        if found:
-            if qq[i] > found:
-                end = i
-                found = qq[i]
-            else:
-                break
-        elif qq[i] > half:
-            found = qq[i]
-
-    return start,end
+    n = 50 # width of rolling sum
+    squared = np.square(n*[samps[0]] + samps + n*[samps[-1]])
+    rolled = pd.Series(squared).rolling(n).sum().tolist()[n-1:]
+    edged = [(a-b)**2 for a,b in zip(rolled[:-(n+1)], rolled[n+1:])]
+    peaks, _ = find_peaks(edged, height=max(edged)/2)
+    return peaks[0], peaks[-1]
 
 def trim(samps):
     start,end = trimmers(samps)
