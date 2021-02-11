@@ -37,6 +37,7 @@ class Waves:
         self.carrier_length = 0
         self.rftail_length = 0
         self.fmax = 0
+        self.inverted = False
         self.empty()
 
     def empty(self):
@@ -93,6 +94,12 @@ class Waves:
 
     def get_fmax(self):
         return self.fmax
+
+    def get_inverted(self):
+        return self.inverted
+
+    def set_inverted(self, val):
+        self.inverted = val
 
 
 
@@ -293,6 +300,7 @@ def sync(bits):
         if q == len(bsyn):
             bits = abits[start:]
             print("Inverted signal detected")
+            waveforms.set_inverted(True)
         else:
             print("No bit sync detected",q)
     return bits
@@ -447,7 +455,7 @@ def get_frames(n, timeout=0):
         n -= 1
         samples = capture(timeout)
         if samples:
-            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples))[1])))))) # need to do this in capture or in second thread pass through with a queue
+            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(samples)))[1]))))) # need to do this in capture or in second thread pass through with a queue
             frames.append(frame)
     return frames
 
