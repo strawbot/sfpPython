@@ -7,10 +7,12 @@ if __name__ == '__main__':
     from interface.serialHub import SerialPort as SerialPort
     from interface.message import note as note
     from display_info import width_dots, height_dots
+    from saleae_interface import *
 else:
     from .interface.serialHub import SerialPort as SerialPort
     from .interface.message import note as note
     from .display_info import width_dots, height_dots
+    from .saleae_interface import *
 
 from scipy import signal
 from numpy.fft import fft as fft
@@ -23,7 +25,9 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 import traceback
 import queue
-import sys,time
+import sys, time
+from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
+
 
 note('Serial Sampler V1')
 
@@ -117,7 +121,6 @@ def capture(seconds=0): # move into waveforms class
                 continue
 
             raw = waveforms.raw
-
             # make sure to start with 1st byte as 4 bits of 12
             evens = np.sum(raw[0::2])
             odds = np.sum(raw[1::2])
@@ -125,13 +128,16 @@ def capture(seconds=0): # move into waveforms class
                 raw.pop(0)
                 n -= 1
 
+            bad_samps = 0
             # combine bytes to make 12 bit samples
             for i in range(n // 2):
                 sample = (raw[2 * i] << 8) | raw[2 * i + 1]
-                if sample < 0x1000: # ignore samples with more than 12 bits defined
+                if sample < 0x1000:  # ignore samples with more than 12 bits defined
                     waveforms.add_samp(sample)
                 else:
-                    print("bad sample (X): ", sample, hex(sample))
+                    bad_samps += 1
+            if bad_samps:
+                print("Got {} bad samples".format(bad_samps))
 
             print("Added (samps): ", len(waveforms.samps))
             break
@@ -152,7 +158,7 @@ def removeDC(samps):
 def resamp(samps):
     # resample to 9 samples/bit
     OVERSAMPLE = 18
-    Fs = 2400*15 # samples counted on agc peak to peak
+    Fs = sample_rate[1] # samples counted on agc peak to peak
     waveforms.set_raw_sample_rate(Fs) # Capture sample rate before resampling
     w = fft(samps[50:len(samps)//4])
     freqs = np.fft.fftfreq(len(w))
@@ -206,7 +212,7 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    n = 50 # width of rolling sum
+    n = len(samps) // 2000 # width of rolling sum
     squared = np.square(n*[samps[0]] + samps + n*[samps[-1]])
     rolled = pd.Series(squared).rolling(n).sum().tolist()[n-1:]
     edged = [(a-b)**2 for a,b in zip(rolled[:-(n+1)], rolled[n+1:])]
@@ -510,13 +516,17 @@ def process_metrics():
 
 
 if __name__ == '__main__':
-    stream = open_stream('/dev/cu.usbserial-FT1Q5LVCB')
+    # stream = open_stream('COM7')
 
     # process_metrics()
     # stream.close()
     # sys.exit(0)
+    # al2 = SfpPort(SerialPort('COM13'))
+    # capture_frames(al2)
+    samples = get_data()
 
-    samples = capture()
+
+    # samples = capture()
     showbitz = []
 
     if samples == 0:
@@ -546,4 +556,4 @@ if __name__ == '__main__':
         traceback.print_exc(file=sys.stderr)
 
     view_waveforms(showbitz)
-    stream.close()
+    # stream.close()
