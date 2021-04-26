@@ -38,7 +38,7 @@ class SerialPort(Port):
                 self.closePort()
                 error("run - serial port exception: %s" % e)
                 traceback.print_exc(file=sys.stderr)
-        print ('serial thread for {} is done'.format(self.name))
+        print('serial thread for {} is done'.format(self.name))
 
     def open(self, rate=None, thread=True, timeout=.01):
         if self.is_open():
@@ -98,7 +98,7 @@ class SerialPort(Port):
     def send_data(self, s):
         if self.isOpen():
             try:
-                print(s)
+                # print(s)
                 if type(s) == type([]):
                     s = bytearray(s)
                 elif type(s) == type(''):
