@@ -14,64 +14,76 @@ def capture_frames(al200_cli):
     if os.path.exists(filename):
         os.remove(filename)
     s = Saleae(host='localhost', port=10429)
-    s.close_all_tabs()
-    s.set_performance(PerformanceOption.Full)
+    if s.is_logic_running():
 
-    devs = s.get_connected_devices()
-    if len(devs) >= 1:
-        print("Found {} logic analyzers".format(len(devs)))
-        if len(devs) > 1:
-            # Select first device found, this could change in the future or may not be needed at all
-            s.select_active_device(0)
-
-        digital = [0, 1, 2]
-        analog = [0, 1]
-        s.set_active_channels(digital, analog)
-        s.set_trigger_one_channel(1, Trigger.Negedge)
-
-        s.set_num_samples(30000000)
-        s.set_capture_pretrigger_buffer_size(100000)
-        # s.set_capture_seconds(1)
-        rates = s.get_all_sample_rates()
-        print("Rates: {}".format(rates))
-        for tup in rates:
-            if tup == sample_rate:
-                s.set_sample_rate(sample_rate)
-                break
-
-        s.capture_start()
-        al200_cli.sendText('sendtest')
-        start = time.time()
-        no_timeout = False
-        while time.time() < start + 3:
-            print("Waiting for capture")
-            if s.is_processing_complete():
-                no_timeout = True
-                break
         try:
-            s.get_capture_range()
-        except ValueError:
-            pass
+            s.close_all_tabs()
         except s.CommandNAKedError:
+            print("Close tabs command failed")
+            # Unsure if the following will work to reset the gui...
+            # s.exit()
+            # print("Closing logic app")
+            # s.kill_logic()
+            # time.sleep(5)
+            # print("Launching logic app")
+            # s.launch_logic()
+            # time.sleep(10)
             return False
-        time.sleep(3)
+        s.set_performance(PerformanceOption.Full)
 
-        # s.capture_stop()
-        print("Exporting data to csv")
-        s.export_data2(filename, analog_channels=analog)
-        while not s.is_processing_complete():
-            print("Waiting for export")
+        devs = s.get_connected_devices()
+        if len(devs) >= 1:
+            print("Found {} logic analyzers".format(len(devs)))
+            if len(devs) > 1:
+                # Select first device found, this could change in the future or may not be needed at all
+                s.select_active_device(0)
+
+            digital = [0, 1, 2]
+            analog = [0, 1]
+            s.set_active_channels(digital, analog)
+            s.set_trigger_one_channel(1, Trigger.Negedge)
+
+            s.set_num_samples(50000000)
+            s.set_capture_seconds(2)
+            s.set_capture_pretrigger_buffer_size(100000)
+            rates = s.get_all_sample_rates()
+            # print("Rates: {}".format(rates))
+            for tup in rates:
+                if tup == sample_rate:
+                    s.set_sample_rate(sample_rate)
+                    break
+
+            s.capture_start()
+            time.sleep(.2)
+            al200_cli.sendText('sendtest')
+            start = time.time()
+            while time.time() < start + 3:
+                # print("Waiting for capture")
+                if s.is_processing_complete():
+                    break
+            try:
+                s.get_capture_range()
+            except ValueError:
+                pass
+            except s.CommandNAKedError:
+                return False
             time.sleep(1)
 
-        al200_cli.sendText('0 beacon')
+            print("Exporting data to csv")
+            s.export_data2(filename, analog_channels=analog)
+            while not s.is_processing_complete():
+                print("Waiting for export")
+                time.sleep(1)
 
-        if os.path.exists(filename): # and no_timeout:
-            return True
+            al200_cli.sendText('0 beacon')
+
+            if os.path.exists(filename): # and no_timeout:
+                return True
+            else:
+                return False
         else:
-            return False
-    else:
-        print("Failed to detect logic analyzer.")
-        raise ConnectionError
+            print("Failed to detect logic analyzer.")
+            raise ConnectionError
 
 
 def get_data():
@@ -79,16 +91,23 @@ def get_data():
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
         count = 0
         data = []
-        for row in csvreader:
-            if count > 1:
-                if float(row['Time']) < 0.0:
-                    trigger_row = count
-                if count > trigger_row:
-                    if float(row['PTT']) > 4.0:
-                        break
-                    data.append(float(row['TX']))
-            count += 1
-        if float(row['PTT']) < 1.0:
+        # print("CSV length: {}".format(len(csvreader)))
+        try:
+            for row in csvreader:
+                if count > 1:
+                    if float(row['Time']) < 0.0:
+                        trigger_row = count
+                    if count > trigger_row:
+                        if float(row['PTT']) > 4.0:
+                            break
+                        if float(row['PTT']) < 0.04:
+                            data.append(float(row['TX']))
+                count += 1
+            # Slightly bad practice to look at row out of scope of the for loop
+            # but this will detect an incomplete capture and return blank instead of returning a partial frame
+            if float(row['PTT']) < 1.0:
+                return []
+        except ValueError:
             return []
         return data
 
