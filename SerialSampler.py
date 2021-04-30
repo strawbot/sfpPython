@@ -523,7 +523,7 @@ if __name__ == '__main__':
     # sys.exit(0)
     # al2 = SfpPort(SerialPort('COM13'))
     # capture_frames(al2)
-    samples = get_data()
+    samples = get_transmission()
 
 
     # samples = capture()
