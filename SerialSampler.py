@@ -94,7 +94,7 @@ class Waves:
         self.rftail_length = num
 
     def set_fmax(self, num):
-        self.fmax = 1/num # Also invert for samples/second
+        self.fmax = num
 
     def get_fmax(self):
         return self.fmax
