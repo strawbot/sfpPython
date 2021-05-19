@@ -10,7 +10,7 @@ filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/t
 sample_rate = (50000000, 2500000)
 
 
-def capture_frames(al200_cli):
+def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channel, trigger_type, capture_time, cli_cmd):
     if os.path.exists(filename):
         os.remove(filename)
     s = Saleae(host='localhost', port=10429)
@@ -21,14 +21,6 @@ def capture_frames(al200_cli):
         except s.CommandNAKedError:
             print("Close tabs command failed")
             s.capture_stop()
-            # Unsure if the following will work to reset the gui...
-            # s.exit()
-            # print("Closing logic app")
-            # s.kill_logic()
-            # time.sleep(5)
-            # print("Launching logic app")
-            # s.launch_logic()
-            # time.sleep(10)
             return False
         s.set_performance(PerformanceOption.Full)
 
@@ -39,13 +31,13 @@ def capture_frames(al200_cli):
                 # Select first device found, this could change in the future or may not be needed at all
                 s.select_active_device(0)
 
-            digital = [0, 1, 2]
-            analog = [0, 1]
-            s.set_active_channels(digital, analog)
-            s.set_trigger_one_channel(1, Trigger.Negedge)
+            s.set_active_channels(digital_channels, analog_channels)
+            reset_all_triggers(s, digital_channels)
+            if trigger_channel > 0:
+                s.set_trigger_one_channel(trigger_channel, trigger_type)  # 1, Trigger.Negedge
 
             s.set_num_samples(50000000)
-            s.set_capture_seconds(2)
+            s.set_capture_seconds(capture_time)  # 2
             s.set_capture_pretrigger_buffer_size(100000)
             rates = s.get_all_sample_rates()
             # print("Rates: {}".format(rates))
@@ -56,7 +48,7 @@ def capture_frames(al200_cli):
 
             s.capture_start()
             time.sleep(.5)
-            al200_cli.sendText('sendtest')
+            al200_cli.sendText(cli_cmd)
             start = time.time()
             while time.time() < start + 3:
                 # print("Waiting for capture")
@@ -71,7 +63,7 @@ def capture_frames(al200_cli):
             time.sleep(1)
 
             print("Exporting data to csv")
-            s.export_data2(filename, analog_channels=analog)
+            s.export_data2(filename, analog_channels=analog_channels)
             while not s.is_processing_complete():
                 print("Waiting for export")
                 time.sleep(1)

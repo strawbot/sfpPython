@@ -40,7 +40,7 @@ class Waves:
         self.resamp_rate = 0
         self.carrier_length = 0
         self.rftail_length = 0
-        self.fmax = 0
+        self.fprime = 0
         self.inverted = False
         self.empty()
 
@@ -53,7 +53,7 @@ class Waves:
         self.resamp_rate = 0
         self.carrier_length = 0
         self.rftail_length = 0
-        self.fmax = 0
+        self.fprime = 0
         
     def textout(self, b): # input is:  08 9F  two bytes for 12 bit ADC
         self.sampleq.put((time.time(), bytearray(b)))
@@ -93,11 +93,11 @@ class Waves:
     def set_rftail_length(self, num):
         self.rftail_length = num
 
-    def set_fmax(self, num):
-        self.fmax = num
+    def set_fprime(self, num):
+        self.fprime = num
 
-    def get_fmax(self):
-        return self.fmax
+    def get_fprime(self):
+        return self.fprime
 
     def get_inverted(self):
         return self.inverted
@@ -170,7 +170,7 @@ def resamp(samps):
     if f1 == 0.0:
         raise ValueError
     print('f prime:',f1)
-    waveforms.set_fmax(f1 * 2)
+    waveforms.set_fprime(f1)
 
     # FFT for plot
     N = len(samps)
