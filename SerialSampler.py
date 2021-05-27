@@ -212,7 +212,7 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    n = len(samps) // 2000 # width of rolling sum
+    n = len(samps) // 300  # width of rolling sum
     squared = np.square(n*[samps[0]] + samps + n*[samps[-1]])
     rolled = pd.Series(squared).rolling(n).sum().tolist()[n-1:]
     edged = [(a-b)**2 for a,b in zip(rolled[:-(n+1)], rolled[n+1:])]

@@ -7,7 +7,10 @@ import csv
 
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/test.csv'
-sample_rate = (50000000, 2500000)
+filename2 = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/rftail_wave_small.csv'
+digital_rate = 50000000
+analog_rate = 125000
+sample_rate = (digital_rate, analog_rate)
 
 
 def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channel, trigger_type, capture_time, cli_cmd):
@@ -36,7 +39,7 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
             if trigger_channel > 0:
                 s.set_trigger_one_channel(trigger_channel, trigger_type)  # 1, Trigger.Negedge
 
-            s.set_num_samples(50000000)
+            # s.set_num_samples(50000000)
             s.set_capture_seconds(capture_time)  # 2
             s.set_capture_pretrigger_buffer_size(100000)
             rates = s.get_all_sample_rates()
@@ -66,7 +69,7 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
             s.export_data2(filename, analog_channels=analog_channels)
             while not s.is_processing_complete():
                 print("Waiting for export")
-                time.sleep(1)
+                time.sleep(5)
 
             if os.path.exists(filename): # and no_timeout:
                 return True
@@ -102,6 +105,32 @@ def get_transmission():
         return data
 
 
+def get_transmission_plus_rx():
+    with open(filename, 'r') as csvfile:
+        csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT', 'AI'])
+        count = 0
+        tx_data = []
+        rx_data = []
+        try:
+            for row in csvreader:
+                if count > 1:
+                    if float(row['Time']) < 0.0:
+                        trigger_row = count
+                    if count > trigger_row:
+                        if float(row['PTT']) > 4.0:
+                            break
+                        if float(row['PTT']) < 0.04:
+                            tx_data.append(float(row['TX']))
+                            rx_data.append(float(row['AI']))
+                count += 1
+            # Slightly bad practice to look at row out of scope of the for loop
+            # but this will detect an incomplete capture and return blank instead of returning a partial frame
+            if float(row['PTT']) < 1.0:
+                return []
+        except ValueError:
+            return []
+        return tx_data, rx_data
+
 def get_radio_warmup_samples():
     with open(filename, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT', 'SW-12 V'])
@@ -115,13 +144,13 @@ def get_radio_warmup_samples():
                         samples += 1
                         if ptt_high:
                             if float(row['PTT']) < 0.1:
-                                break
+                                return samples
                         if float(row['PTT']) > 4.0:
                             ptt_high = True
                 count += 1
         except ValueError:
             return 0
-        return samples
+        return 0
 
 
 def get_sine_samples():
