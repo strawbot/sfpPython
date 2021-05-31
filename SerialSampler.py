@@ -14,6 +14,7 @@ else:
     from .display_info import width_dots, height_dots
     from .saleae_interface import *
 
+from numpy.lib.function_base import average, median
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
@@ -212,12 +213,15 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    n = len(samps) // 300  # width of rolling sum
-    squared = np.square(n*[samps[0]] + samps + n*[samps[-1]])
-    rolled = pd.Series(squared).rolling(n).sum().tolist()[n-1:]
-    edged = [(a-b)**2 for a,b in zip(rolled[:-(n+1)], rolled[n+1:])]
-    peaks, _ = find_peaks(edged, height=max(edged)/2)
-    return peaks[0], peaks[-1]
+    avg = average(samps)
+    nodc = np.array(samps) - avg
+    rect = np.absolute(nodc)
+    window = 20
+    medi = pd.Series(rect).rolling(window).median()
+    level = np.max(medi)/5
+    first = np.argmax(medi>level)
+    last = first + np.argmax(medi[first:]<level)
+    return first, last
 
 def trim(samps):
     start,end = trimmers(samps)
