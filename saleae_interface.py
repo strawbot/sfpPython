@@ -108,7 +108,10 @@ def get_transmission():
                         state = PRETRIG
                 if state is PRETRIG:
                     if float(row['Time']) >= 0.0:
-                        state = PTTVALID
+                        if float(row['PTT']) < 0.04:
+                            state = PTTLO
+                        else:
+                            state = PTTVALID
                 if state is PTTVALID:
                     if float(row['PTT']) > 4.0:
                         state = PTTHI
