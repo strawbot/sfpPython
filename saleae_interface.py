@@ -79,27 +79,48 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
             print("Failed to detect logic analyzer.")
             raise ConnectionError
 
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except:
+        return False
+
+def is_just_frame(csvreader):
+    for row in csvreader:
+        if is_number(row['PTT']):
+            if float(row['PTT']) > 4.0:
+                return False
+    return True
 
 def get_transmission():
     with open(filename, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
-        count = 0
+        HEADS, PRETRIG, PTTVALID, PTTHI, PTTLO = range(5)
+        state = HEADS
         data = []
         try:
+            if is_just_frame(csvreader):
+                return [float(row['TX']) for row in csvreader if is_number(row['TX'])]
             for row in csvreader:
-                if count > 1:
-                    if float(row['Time']) < 0.0:
-                        trigger_row = count
-                    if count > trigger_row:
-                        if float(row['PTT']) > 4.0:
-                            break
-                        if float(row['PTT']) < 0.04:
-                            data.append(float(row['TX']))
-                count += 1
-            # Slightly bad practice to look at row out of scope of the for loop
-            # but this will detect an incomplete capture and return blank instead of returning a partial frame
-            if float(row['PTT']) < 1.0:
-                return []
+                if state is HEADS:
+                    if is_number(row['Time']):
+                        state = PRETRIG
+                if state is PRETRIG:
+                    if float(row['Time']) >= 0.0:
+                        state = PTTVALID
+                if state is PTTVALID:
+                    if float(row['PTT']) > 4.0:
+                        state = PTTHI
+                if state is PTTHI:
+                    if float(row['PTT']) < 0.04:
+                        state = PTTLO
+                if state is PTTLO:
+                    if float(row['PTT']) > 4.0:
+                        break
+                    data.append(float(row['TX']))
+            # if float(row['PTT']) < 1.0:
+            #     return []
         except ValueError:
             return []
         return data
