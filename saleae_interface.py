@@ -96,7 +96,7 @@ def is_just_frame(csvreader):
 def get_transmission():
     with open(filename, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
-        HEADS, PRETRIG, PTTVALID, PTTHI, PTTLO = range(5)
+        HEADS, PRETRIG, PTTHI, PTTLO = range(4)
         state = HEADS
         data = []
         try:
@@ -106,13 +106,13 @@ def get_transmission():
                         state = PRETRIG
                 if state is PRETRIG:
                     if float(row['Time']) >= 0.0:
-                        if float(row['PTT']) < 0.04:
+                        ptt = float(row['PTT'])
+                        if ptt < 0.04:
                             state = PTTLO
+                        elif ptt > 4.0:
+                            state = PTTHI
                         else:
-                            state = PTTVALID
-                if state is PTTVALID:
-                    if float(row['PTT']) > 4.0:
-                        state = PTTHI
+                            continue # exclude the transition
                 if state is PTTHI:
                     if float(row['PTT']) < 0.04:
                         state = PTTLO
