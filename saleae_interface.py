@@ -100,8 +100,6 @@ def get_transmission():
         state = HEADS
         data = []
         try:
-            if is_just_frame(csvreader):
-                return [float(row['TX']) for row in csvreader if is_number(row['TX'])]
             for row in csvreader:
                 if state is HEADS:
                     if is_number(row['Time']):
@@ -122,8 +120,6 @@ def get_transmission():
                     if float(row['PTT']) > 4.0:
                         break
                     data.append(float(row['TX']))
-            # if float(row['PTT']) < 1.0:
-            #     return []
         except ValueError:
             return []
         return data
