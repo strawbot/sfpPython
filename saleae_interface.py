@@ -119,7 +119,6 @@ def capture_self_report(digital_channels, analog_channels, trigger_channel, trig
             s.capture_start()
             start = time.time()
             while time.time() < start + 11:
-                print("Waiting for capture")
                 if s.is_processing_complete():
                     break
             try:
