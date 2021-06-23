@@ -80,7 +80,7 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
             raise ConnectionError
 
 
-def capture_self_report(digital_channels, analog_channels, trigger_channel, trigger_type, capture_time):
+def capture_self_report(digital_channels, analog_channels, trigger_channel, trigger_type, capture_time, tx_rate):
     if os.path.exists(filename):
         os.remove(filename)
     s = Saleae(host='localhost', port=10429)
@@ -107,27 +107,32 @@ def capture_self_report(digital_channels, analog_channels, trigger_channel, trig
                 s.set_trigger_one_channel(trigger_channel, trigger_type)  # 1, Trigger.Negedge
 
             # s.set_num_samples(50000000)
-            s.set_capture_seconds(capture_time)  # 2
-            s.set_capture_pretrigger_buffer_size(100000)
+            s.set_capture_seconds(capture_time)  # 11
+            s.set_capture_pretrigger_buffer_size(10000)
             rates = s.get_all_sample_rates()
             # print("Rates: {}".format(rates))
             for tup in rates:
-                if tup == sample_rate:
-                    s.set_sample_rate(sample_rate)
+                if tup[1] == tx_rate:
+                    s.set_sample_rate(tup)
                     break
 
             s.capture_start()
             start = time.time()
-            while time.time() < start + 11:
+            while True:
+                time.sleep(.5)
                 if s.is_processing_complete():
+                    print("Processing complete")
                     break
+                if time.time() > start + 11:
+                    s.capture_stop()
+                    raise TimeoutError
             try:
                 s.get_capture_range()
             except ValueError:
                 pass
             except s.CommandNAKedError:
                 return False
-            time.sleep(1)
+            time.sleep(.5)
 
             print("Exporting data to csv")
             s.export_data2(filename, analog_channels=analog_channels)
@@ -135,7 +140,7 @@ def capture_self_report(digital_channels, analog_channels, trigger_channel, trig
                 print("Waiting for export")
                 time.sleep(5)
 
-            if os.path.exists(filename): # and no_timeout:
+            if os.path.exists(filename):
                 return True
             else:
                 return False
