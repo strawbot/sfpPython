@@ -28,7 +28,7 @@ def value_decode(type, pdu):
     return v.get(type, hex_by2)(pdu)
 
 def knit(hstring, fill):
-    return fill.join('{:02X}'.format(hstring[i]) for i in range(len(hstring)))
+    return fill.join('{:02X}'.format(x) for x in hstring)
 
 def hex_by2(wool):
     return knit(wool, ' ')
@@ -52,6 +52,20 @@ def xnum(pdu): # return 7 bit number or 15 bit number if first bit is high; plus
         num = ((num&0x7F)<<8) + int(pdu[2:4], 16)
         return (pdu[4:], num)
     return (pdu[2:], num)
+
+def xnumba(pdu): # return 7 bit number or 15 bit number if first bit is high; plus remainder; bytearray
+    num = pdu.pop(0)
+    if num & 0x80:
+        num = ((num&0x7F)<<8) + pdu.pop(0)
+        return (pdu, num)
+    return (pdu, num)
+
+def nvalue(pdu): # return count prefixed value and leftover pdu
+    pdu, length = xnumba(pdu)
+    n = 0
+    for i in range(length):
+        n = (n << 8) + pdu.pop(0)
+    return pdu, n
 
 class alert1():
     def __init__(self, name, pdu):
