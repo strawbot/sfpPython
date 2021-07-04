@@ -1,6 +1,7 @@
 from protocols.tlv_types import d as csi
 from protocols.tlv_types_blue_water import d as bw
 import numpy as np
+import sys, traceback
 
 t = bw
 t.update(csi)
@@ -31,7 +32,7 @@ class checkAlert2():
             if index == 0: # found beginning of frame at beginning
                 pdu, length = xnum_bin(self.flow[qlength:])
                 if length == 0 or len(pdu) < length:
-                    return # there is no frame yet
+                    return 0,0 # there is no frame yet
                 print('pdu,len',pdu, length)
                 report = decode(pdu[:length])
                 self.flow = pdu[length:]
@@ -39,7 +40,7 @@ class checkAlert2():
                 report = self.flow[:index].decode('utf-8', 'replace')
                 self.flow = self.flow[index:]
             else: # no frame header detected
-                return
+                return 0,0
             start = self.times[0]
             self.times = self.times[-len(self.flow):]
         return report, start
@@ -58,7 +59,9 @@ def hexString(s):
     return ''.join(map(lambda x: hex(ord(x))[2:], s))
 
 def hexscii(s):
-    return bytearray.fromhex(s).decode('utf-8', 'replace')
+    if type(s) is type('s'):
+        return bytearray.fromhex(s).decode('utf-8', 'replace')
+    return s
 
 
 # decoders
@@ -78,17 +81,24 @@ def decode_tlv(tlv):
 
 def decode(flow):
     n = len(flow)
-    if n == 0:
-        return ''
-    report, flow = decode_tlv(flow)
-    while flow:
-        text, flow = decode_tlv(flow)
-        report += ' ' + text
+    if n < 2:
+        report = "too short to decode:" + ''.join(map(lambda x: hex(x)[2:], flow))
+    else:
+        report, flow = decode_tlv(flow)
+        while flow:
+            text, flow = decode_tlv(flow)
+            report += ' ' + text
     return '{}[{}]'.format(n, report)
 
 # decodes
 def value_decode(type, pdu):
-    return v.get(type, hex_by2)(pdu)
+    try:
+        return v.get(type, hex_by2)(pdu)
+    except Exception as e:
+        print('type: ',type, '  pdu: ', pdu)
+        print(e)
+        traceback.print_exc(file=sys.stderr)
+        return 'decode error'
 
 def knit(hstring, fill):
     return fill.join('{:02X}'.format(hstring[i]) for i in range(len(hstring)))
@@ -99,9 +109,9 @@ def hex_by2(wool):
 def decimal(wool):
     if wool:
         n = 0
-        for i in range(len(wool)):
-            n = (n<<8) + wool[i]
-        return n
+        while wool:
+            n = (n<<8) + wool.pop(0)
+        return '%i'%n
     return ''
 
 def abled(wool):
@@ -179,7 +189,7 @@ v[32] = abled
 v[40] = abled
 v[49] = decimal
 v[50] = abled
-v[51] = lambda s: ["Pass", "Reject"][int(s)]
+v[51] = lambda s: ["Pass", "Reject"][ord(s)] if ord(s) < 2 else ord(s)
 v[52] = decimal
 v[53] = decimal
 v[54] = decimal
@@ -201,8 +211,8 @@ v[77] = decimal
 v[78] = decimal
 v[79] = boolean
 
-v[81] = lambda s: ["Drop", "Overrun"][int(s)]
-v[82] = ","
+v[81] = lambda s: ["Drop", "Overrun"][ord(s)] if ord(s) < 2 else ord(s)
+v[82] = decimal
 
 
 v[96] = decimal
@@ -251,12 +261,12 @@ v[150] = string
 
 
 v[4096] = decimal
-v[1001] = lambda s: ['None', 'Odd', 'Even'][int(s)]
+v[1001] = lambda s: ['None', 'Odd', 'Even'][ord(s)] if ord(s) < 3 else ord(s)
 v[4098] = decimal
-v[4099] = lambda s: ['None', 'Hardware', 'Software'][int(s)]
+v[4099] = lambda s: ['None', 'Hardware', 'Software'][ord(s)] if ord(s) < 3 else ord(s)
 v[4102] = decimal
 v[4103] = decimal
-v[4104] = lambda s: ['API', 'ALERT Concentration'][int(s)]
+v[4104] = lambda s: ['API', 'ALERT Concentration'][ord(s)] if ord(s) < 2 else ord(s)
 v[4105] = boolean
 v[4106] = decimal
 v[4107] = decimal
@@ -266,8 +276,8 @@ v[4113] = string
 v[4114] = string
 v[4115] = string
 v[4116] = string
-v[4117] = string
-v[4118] = decimal
+v[4117] = decimal
+v[4118] = string
 v[4119] = string
 v[4120] = string
 v[4121] = string
