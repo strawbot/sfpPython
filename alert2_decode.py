@@ -7,10 +7,6 @@ t = bw
 t.update(csi)
 header = 'AL22b'
 
-'''
-use decode to get initial length and drill down using recurse
-put a try/except around decode so when decoding fails, it can report to that point and flag the decode issue
-'''
 class checkAlert2():
     def __init__(self):
         self.flow = bytearray()
@@ -186,14 +182,8 @@ v = {}
 # table generated code:
 # value definitions
 v[0] = lambda wool : 'Application PDU{' + hex_by2(wool) + '}'
-
-
 v[10] = setparams
 v[11] = getparams
-
-
-
-
 v[24] = decimal
 v[25] = decimal
 v[26] = abled
@@ -209,9 +199,7 @@ v[53] = decimal
 v[54] = decimal
 v[55] = decimal
 v[56] = decimal
-
 v[58] = boolean
-
 v[63] = abled
 v[64] = decimal
 v[65] = boolean
@@ -224,11 +212,8 @@ v[76] = decimal
 v[77] = decimal
 v[78] = decimal
 v[79] = boolean
-
 v[81] = lambda s: ["Drop", "Overrun"][ord(s)] if ord(s) < 2 else ord(s)
 v[82] = decimal
-
-
 v[96] = decimal
 v[97] = decimal
 v[98] = decimal
@@ -237,8 +222,6 @@ v[100] = decimal
 v[101] = boolean
 v[102] = decimal
 v[104] = decimal
-
-
 v[117] = decimal
 v[119] = string
 v[120] = decimal
@@ -246,11 +229,8 @@ v[121] = decimal
 v[122] = decimal
 v[123] = decimal
 v[124] = decimal
-
 v[126] = decimal
 v[127] = decimal
-
-
 v[130] = boolean
 v[131] = decimal
 v[132] = decimal
@@ -259,21 +239,6 @@ v[134] = decimal
 v[135] = decimal
 v[136] = decimal
 v[150] = string
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 v[4096] = decimal
 v[1001] = lambda s: ['None', 'Odd', 'Even'][ord(s)] if ord(s) < 3 else ord(s)
 v[4098] = decimal
@@ -284,8 +249,6 @@ v[4104] = lambda s: ['API', 'ALERT Concentration'][ord(s)] if ord(s) < 2 else or
 v[4105] = boolean
 v[4106] = decimal
 v[4107] = decimal
-
-
 v[4113] = string
 v[4114] = string
 v[4115] = string
