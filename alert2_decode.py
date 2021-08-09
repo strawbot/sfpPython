@@ -1,5 +1,9 @@
-from .tlv_types import d as csi
-from .tlv_types_blue_water import d as bw
+if __name__ == "__main__":
+    from tlv_types import d as csi
+    from tlv_types_blue_water import d as bw
+else:
+    from .tlv_types import d as csi
+    from .tlv_types_blue_water import d as bw
 import numpy as np
 import sys, traceback
 
@@ -22,7 +26,7 @@ class checkAlert2():
         report = ''
         query = bytearray(header, 'utf-8')
         qlength = len(query)
-
+        print(query, text)
         while len(self.flow) >= qlength + 2: # check for header and 2byte length
             index = self.flow.find(query)
             if index == 0: # found beginning of frame at beginning
@@ -35,7 +39,8 @@ class checkAlert2():
             elif index > 0: # remove stuff before frame
                 report = self.flow[:index].decode('utf-8', 'replace')
                 self.flow = self.flow[index:]
-            else: # no frame header detected
+            else:
+                print("no frame header detected")
                 return 0,0
             start = self.times[0]
             self.times = self.times[-len(self.flow):]
@@ -262,4 +267,10 @@ v[4122] = string
 v[4123] = string
 
 
-
+if __name__ == "__main__":
+    check = checkAlert2()
+    test0=bytes.fromhex('414C323262110A0C48022EE04B020BB84A0203')
+    test1=b'414C32326222002070071DFFF461003C800B453441E2F5C241E30A3D41E2F5C241E2F5C241E30A3D'
+    test2=b'414C3232622E002C700729FFF461003CF80B453441E31EB841E31EB841E3333341E3333341E35C2941E347AE41E370A441E39999'
+    report, start = check(0, len(test0), test0)
+    print(report)
