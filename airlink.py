@@ -1,13 +1,21 @@
 import io
 
-class bit_array():
-    def __init__(self):
+class bit_fields():
+    def __init__(self, fields):
         offset = 0
-        for field in self._fields_:
+        for field in fields:
             name, span = field
             self.build(name, offset, span)
             offset += span
         self.nbits = offset
+
+    def behead(self, mp):
+        index = self.nbits//8
+        return mp[:index], mp[index:]
+
+    def betail(self, mp):
+        index = -(self.nbits//8)
+        return mp[:index], mp[index:]
 
     def build(self, name, offset, span):
         namec = name+':'
@@ -27,8 +35,7 @@ class bit_array():
 def Short(ba):
     return (ba[0] << 8) + ba[1]
 
-class Mant_header(bit_array):
-    _fields_ = [ #(name, span)
+mh = bit_fields([ #(name, span)
         ("version", 2),
         ("protocol_id", 3),
         ("ts_service", 1),
@@ -44,9 +51,7 @@ class Mant_header(bit_array):
         ("length", 12),
 
         ("source_address", 16),
-        ]
-
-mh = Mant_header()
+        ])
 
 def decode_mant_header(mp):# mp = bytearray([0x07, 0x06, 0x00, 0x10, 0x0D, 0x10])
 
@@ -68,7 +73,7 @@ def decode_mant_header(mp):# mp = bytearray([0x07, 0x06, 0x00, 0x10, 0x0D, 0x10]
         print(*mh.length(mp), file=f) # 3862
 
         print(*mh.source_address(mp), file=f) # 45502
-        mpx = mp[mh.nbits//8:]
+        mpx = mh.behead(mp)
 
         if (mh.inc_da(mp)):
             print("Dest addr:", Short(mpx), file=f)

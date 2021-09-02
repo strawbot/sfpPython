@@ -1,15 +1,15 @@
 if __name__ == "__main__":
-    from tlv_types import d as csi
+    from tlv_types import d as csi, c as cw
     from tlv_types_blue_water import d as bw
 else:
-    from .tlv_types import d as csi
+    from .tlv_types import d as csi, c as cw
     from .tlv_types_blue_water import d as bw
 import numpy as np
 import sys, traceback
 
 t = bw
 t.update(csi)
-header = 'AL22b'
+header = b'AL22b'
 
 class checkAlert2():
     def __init__(self):
@@ -24,7 +24,7 @@ class checkAlert2():
         print ('Check:', start, end, text, tstamp)
 
         report = ''
-        query = bytearray(header, 'utf-8')
+        query = header
         qlength = len(query)
         print(query, text)
         while len(self.flow) >= qlength + 2: # check for header and 2byte length
@@ -43,7 +43,7 @@ class checkAlert2():
                 print("no frame header detected")
                 return 0,0
             start = self.times[0]
-            self.times = self.times[-len(self.flow):]
+            self.times = self.times[:len(self.flow)]
         return report, start
 
 # utility
@@ -74,11 +74,14 @@ def xnum_bin(pdu):  # return 7 bit number or 15 bit number if first bit is high;
 
 def decode_tlv(tlv):
     rest, type = xnum_bin(tlv)
-    rest, tlv_length = xnum_bin(rest)
     defn = t.get(type, '--')
-    value = value_decode(type, rest[:tlv_length])
-    report = '{:0>2x}{{{}}} {}[{}]'.format(type, defn, tlv_length, value)
-    return report, rest[tlv_length:]
+    if rest:
+        rest, tlv_length = xnum_bin(rest)
+        value = value_decode(type, rest[:tlv_length])
+        report = '{:0>2x}{{{}}} {}[{}]'.format(type, defn, tlv_length, value)
+        return report, rest[tlv_length:]
+    report = '{:0>2x}{{{}}}'.format(type, defn)
+    return report,[]
 
 def decode(flow):
     n = len(flow)
@@ -156,30 +159,6 @@ def nvalue(pdu): # return count prefixed value and leftover pdu
     for i in range(length):
         n = (n << 8) + pdu.pop(0)
     return pdu, n
-
-class alert1():
-    def __init__(self, name, pdu):
-        self.pdu = pdu
-        self.name = name
-
-    def decode(self):
-        return hexscii(self.pdu)
-
-class alert2(alert1):
-    query = hexString(header)
-    length = len(query)
-
-    def decode(self): # "414C44525432..."
-        print (self.pdu)
-        if len(self.pdu) == 0:
-            return 'empty PDU'
-        pdu, type = xnum_hex(self.pdu)
-        pdu,tlv_length = xnum_hex(pdu)
-
-        defn = t.get(type,'--')
-        value = value_decode(type, pdu)
-
-        return 'ALERT2 {:>2}[ {:0>2x}{} {}[ {} ]]'.format(len(pdu),type,'{'+defn+'}',tlv_length,value)
 
 # value decoders by type
 v = {}
@@ -268,9 +247,20 @@ v[4123] = string
 
 
 if __name__ == "__main__":
+    def tsend(time, nchars):
+        baud = 57600
+        bittime = 1/baud
+        chartime = (1 + 8 + 1) * bittime
+        return time + chartime * nchars
+
+    import time
     check = checkAlert2()
-    test0=bytes.fromhex('414C323262110A0C48022EE04B020BB84A0203')
-    test1=b'414C32326222002070071DFFF461003C800B453441E2F5C241E30A3D41E2F5C241E2F5C241E30A3D'
-    test2=b'414C3232622E002C700729FFF461003CF80B453441E31EB841E31EB841E3333341E3333341E35C2941E347AE41E370A441E39999'
-    report, start = check(0, len(test0), test0)
-    print(report)
+    test0=bytes.fromhex('414C323262035201B2')
+    test1=bytes.fromhex('414C32326222002070071DFFF461003C800B453441E2F5C241E30A3D41E2F5C241E2F5C241E30A3D')
+    test2=bytes.fromhex('414C3232622E002C700729FFF461003CF80B453441E31EB841E31EB841E3333341E3333341E35C2941E347AE41E370A441E39999')
+    test3=bytes.fromhex('414C323262017C')
+
+    print(check(time.time()*1000, tsend(time.time(),len(test0)), test0))
+    print(check(time.time()*1000, tsend(time.time(),len(test1)), test1))
+    print(check(time.time()*1000, tsend(time.time(),len(test2)), test2))
+    print(check(time.time()*1000, tsend(time.time(),len(test3)), test3))
