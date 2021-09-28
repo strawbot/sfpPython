@@ -1,15 +1,16 @@
 if __name__ == "__main__":
-    from tlv_types import d as csi, c as cw
+    from tlv_types import p as parms, c as cw
     from tlv_types_blue_water import d as bw
 else:
-    from .tlv_types import d as csi, c as cw
+    from .tlv_types import p as parms, c as cw
     from .tlv_types_blue_water import d as bw
 import numpy as np
 import sys, traceback
 
-t = bw
-t.update(csi)
 header = b'AL22b'
+
+cp = dict(cw)
+cp.update(parms)
 
 class checkAlert2():
     def __init__(self):
@@ -21,23 +22,26 @@ class checkAlert2():
         step = (end - start) / len(text)
         tstamp = [int(t) for t in np.arange(start, end, step)] if step else [start]
         self.times += tstamp
-        print ('Check:', start, end, text, tstamp)
+        # print ('Check:', start, end, text, tstamp)
 
         report = ''
         query = header
         qlength = len(query)
-        print(query, text)
+        # print(query, text)
         while len(self.flow) >= qlength + 2: # check for header and 2byte length
             index = self.flow.find(query)
             if index == 0: # found beginning of frame at beginning
                 pdu, length = xnum_bin(self.flow[qlength:])
-                if length == 0 or len(pdu) < length:
+                if length == 0:
+                    report += '0[zero length frame] '
+                elif len(pdu) < length:
                     return 0,0 # there is no frame yet
-                print('pdu,len',pdu, length)
-                report = decode(pdu[:length])
+                # print('pdu,len',pdu, length)
+                else:
+                    report += decode(pdu[:length])
                 self.flow = pdu[length:]
             elif index > 0: # remove stuff before frame
-                report = self.flow[:index].decode('utf-8', 'replace')
+                report += self.flow[:index].decode('utf-8', 'replace')
                 self.flow = self.flow[index:]
             else:
                 print("no frame header detected")
@@ -72,9 +76,9 @@ def xnum_bin(pdu):  # return 7 bit number or 15 bit number if first bit is high;
     return pdu[1:], pdu[0]
 
 
-def decode_tlv(tlv):
+def decode_tlv(tlv, d):
     rest, type = xnum_bin(tlv)
-    defn = t.get(type, '--')
+    defn = d.get(type, '--')
     if rest:
         rest, tlv_length = xnum_bin(rest)
         value = value_decode(type, rest[:tlv_length])
@@ -88,9 +92,9 @@ def decode(flow):
     if n < 2:
         report = "too short to decode:" + ''.join(map(lambda x: hex(x)[2:], flow))
     else:
-        report, flow = decode_tlv(flow)
+        report, flow = decode_tlv(flow, cp)
         while flow:
-            text, flow = decode_tlv(flow)
+            text, flow = decode_tlv(flow, cp)
             report += ' ' + text
     return '{}[{}]'.format(n, report)
 
@@ -113,10 +117,15 @@ def hex_by2(wool):
 def decimal(wool):
     if wool:
         n = 0
-        while wool:
-            n = (n<<8) + wool.pop(0)
+        for i in range(len(wool)):
+            n = (n << 8) + wool[i]
         return '%i'%n
     return ''
+
+def twolong(wool):
+    out = ''
+    out += decimal(wool[:4])
+    return out + ' ' + decimal(wool[4:])
 
 def abled(wool):
     return 'Enabled' if wool[0] else 'Disabled'
@@ -130,12 +139,12 @@ def string(wool):
 def setparams(wool):
     report = ''
     while wool:
-        text, wool = decode_tlv(wool)
+        text, wool = decode_tlv(wool, parms)
         report += text
     return report
 
 def getparams(wool):
-    return ' '.join('{:0>2x}{{{}}}'.format(type, t.get(type, '--')) for type in wool)
+    return ' '.join('{:0>2x}{{{}}}'.format(type, parms.get(type, '--')) for type in wool)
 
 # decoders
 # need to protect against bad decoding and then remove data still in stream
@@ -147,18 +156,21 @@ def xnum_hex(pdu): # return 7 bit number or 15 bit number if first bit is high; 
     return (pdu[2:], num)
 
 def xnumba(pdu): # return 7 bit number or 15 bit number if first bit is high; plus remainder; bytearray
-    num = pdu.pop(0)
-    if num & 0x80:
-        num = ((num&0x7F)<<8) + pdu.pop(0)
+    if pdu:
+        num = pdu.pop(0)
+        if num & 0x80 and pdu:
+            num = ((num&0x7F)<<8) + pdu.pop(0)
+            return (pdu, num)
         return (pdu, num)
-    return (pdu, num)
+    return (pdu,None)
 
 def nvalue(pdu): # return count prefixed value and leftover pdu
     pdu, length = xnumba(pdu)
     n = 0
     for i in range(length):
-        n = (n << 8) + pdu.pop(0)
-    return pdu, n
+        n = (n << 8) + pdu.pop(0) if pdu else n
+    return (pdu, n)
+
 
 # value decoders by type
 v = {}
@@ -212,7 +224,8 @@ v[120] = decimal
 v[121] = decimal
 v[122] = decimal
 v[123] = decimal
-v[124] = decimal
+v[124] = twolong
+v[125] = decimal
 v[126] = decimal
 v[127] = decimal
 v[130] = boolean
@@ -253,14 +266,17 @@ if __name__ == "__main__":
         chartime = (1 + 8 + 1) * bittime
         return time + chartime * nchars
 
+    def test(frame):
+        if type(frame) == type(''):
+            frame = bytes.fromhex(frame)
+        print('@@@ ',check(time.time()*1000, tsend(time.time(),len(frame)), frame))
+
     import time
     check = checkAlert2()
-    test0=bytes.fromhex('414C323262035201B2')
-    test1=bytes.fromhex('414C32326222002070071DFFF461003C800B453441E2F5C241E30A3D41E2F5C241E2F5C241E30A3D')
-    test2=bytes.fromhex('414C3232622E002C700729FFF461003CF80B453441E31EB841E31EB841E3333341E3333341E35C2941E347AE41E370A441E39999')
-    test3=bytes.fromhex('414C323262017C')
-
-    print(check(time.time()*1000, tsend(time.time(),len(test0)), test0))
-    print(check(time.time()*1000, tsend(time.time(),len(test1)), test1))
-    print(check(time.time()*1000, tsend(time.time(),len(test2)), test2))
-    print(check(time.time()*1000, tsend(time.time(),len(test3)), test3))
+    test('414C323262035201B2')
+    test('414C32326222002070071DFFF461003C800B453441E2F5C241E30A3D41E2F5C241E2F5C241E30A3D')
+    test('414C3232622E002C700729FFF461003CF80B453441E31EB841E31EB841E3333341E3333341E35C2941E347AE41E370A441E39999')
+    test(b'AL22b\x00')
+    test('414C323262035201B2')
+    test('414C323262017C')
+    test('414C323262035201B2')

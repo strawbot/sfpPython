@@ -23,6 +23,9 @@ def hexify(s):
 def hx(s,n):
     return '{} {}'.format(s,toHex(n)[1:-1])
 
+def hx4(s,n):
+    return '{} {:04X}'.format(s,n)
+
 def hb(s,n):
     return '{} {}'.format(s,n)
 
@@ -146,14 +149,14 @@ GetSettingsResponse = GetSettings + RESP
 SetSettingsResponse = SetSettings + RESP
 
 def gs_msg(msg):
-    out = ' ' + hx(*gs.securitycode(msg)) + '\n'
+    out = ' ' + hx4(*gs.securitycode(msg)) + '\n'
     if len(msg) > 2:
         out += ' ' + hx(*gs.startafter(msg)) + '\n'
         out += ' ' + hx(*gs.beginsettingid(msg)) + '\n'
     if len(msg) > 4:
         out += ' ' + hx(*gs.reserved(msg)) + '\n'
         out += ' ' + hx(*gs.endsettingid(msg)) + '\n'
-    return out
+    return out[:-1]
 
 def gsr_msg(msg):
     out = ' ' + hx(*ghr.outcome(msg)) + '\n'
@@ -168,7 +171,7 @@ def gsr_msg(msg):
             name = settings.get(id, '<unknown>')
             length = ser.valuelength(msg)[1]
             if id == 1:
-                name += ': ' + str(msg[4:4 + length], 'utf-8')
+                name += ': ' + str(msg[4:4 + length], 'utf-8') + '\n'
 
             out += '  ' + hx(*ser.settingid(msg)) + '(%i) %s\n' % (id, name)
             out += '   ' + hb(*ser.largevalue(msg)) + '\n'
@@ -177,10 +180,10 @@ def gsr_msg(msg):
             del (msg[:4])
             out += '   value:' + hexify(msg[:length])
             del (msg[:length])
-    return out
+    return out[:-1]
 
 def ss_msg(msg):
-    out = ' ' + hx(*gs.securitycode(msg)) + '\n'
+    out = ' ' + hx4(*gs.securitycode(msg)) + '\n'
     del(msg[:2])
     while msg:
         out += '  ' + hx(*se.settingid(msg)) + '\n'
@@ -190,7 +193,7 @@ def ss_msg(msg):
         del(msg[:4])
         out += '    value:' + hexify(msg[:length])
         del (msg[:length])
-    return out
+    return out[:-1]
 
 def ssr_msg(msg):
     out = ' ' + hx(*ghr.outcome(msg)) + '\n'
@@ -220,12 +223,12 @@ def ssr_msg(msg):
             del (msg[:4])
             out += '   value:' + hexify(msg[:length])
             del (msg[:length])
-    return out
+    return out[:-1]
 
 def decode_msg(typ, msg):
     if typ == Control:
         cmds = ['','Commit, Exit','Cancel, Exit', 'Default settings', 'Refresh only', 'Load OS', 'Scan Wifi']
-        return 'Sec code: {}\nCommand: {}'.format(toHex((msg[0]<<8)+msg[1]), cmds[msg[2]])
+        return ' securitycode: {:04X}\n command: {}'.format((msg[0]<<8) + msg[1], cmds[msg[2]])
     if typ == Response:
         res = ['', 'Commit and reboot', 'security fail', 'session ending', 'load os', 'semi defaults', 'be calm', 'settings busy', 'system error', 'bad action', 'scanning wifi']
         return 'Status: ' + res[msg[0]]
@@ -269,13 +272,20 @@ def dequote(frame):
     QUOTED = 0xBC
     MASKER = 0x20
     out = bytearray()
-    quote = 0
+    quote = False
     for b in frame:
-        if b is QUOTED and quote is 0:
-            quote = MASKER
+        if b is QUOTED:
+            quote = True
+        elif quote:
+            quote = False
+            newb = b - MASKER
+            if newb in [SYNC, QUOTED]:
+                out.append(newb)
+            else:
+                print("Error: not a quoted byte %02X"%newb)
+                out.append(b)
         else:
-            out.append(b - quote)
-            quote = 0
+            out.append(b)
     return out
 
 def decode_dcp(input):
