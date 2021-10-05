@@ -41,6 +41,12 @@ def typify(s,n):
     dir = 'Cmd:' if n < 0x7F else 'Rsp:'
     return '{} {} {} {}'.format(s,toHex(n)[1:-1],dir,types)
 
+def to_n(msg):
+    n = 0
+    for m in msg:
+        n = n << 8 | m
+    return n
+
 
 h = bit_fields([ #(name, span)
         ("Sync", 8),
@@ -148,37 +154,41 @@ SetSettings = 0x10
 GetSettingsResponse = GetSettings + RESP
 SetSettingsResponse = SetSettings + RESP
 
+def id_name(msg):
+    id = ser.settingid(msg)[1]
+    name = settings.get(id, '<unknown>')
+    if id == 1:
+        length = ser.valuelength(msg)[1]
+        name += ': ' + str(msg[4:4 + length], 'utf-8') + '\n'
+    return id,name
+
 def gs_msg(msg):
     out = ' ' + hx4(*gs.securitycode(msg)) + '\n'
     if len(msg) > 2:
         out += ' ' + hx(*gs.startafter(msg)) + '\n'
-        out += ' ' + hx(*gs.beginsettingid(msg)) + '\n'
+        out += ' ' + hb(*gs.beginsettingid(msg)) + '\n'
     if len(msg) > 4:
         out += ' ' + hx(*gs.reserved(msg)) + '\n'
-        out += ' ' + hx(*gs.endsettingid(msg)) + '\n'
+        out += ' ' + hb(*gs.endsettingid(msg)) + '\n'
     return out[:-1]
 
 def gsr_msg(msg):
-    out = ' ' + hx(*ghr.outcome(msg)) + '\n'
+    out = ' ' + hb(*ghr.outcome(msg)) + '\n'
     if len(msg) > 1:
         out += ' ' + hx(*ghr.devicetype(msg)) + '\n'
-        out += ' ' + hx(*ghr.majorversion(msg)) + '\n'
-        out += ' ' + hx(*ghr.minorversion(msg)) + '\n'
-        out += ' ' + hx(*ghr.moresettings(msg)) + '\n'
+        out += ' ' + hb(*ghr.majorversion(msg)) + '\n'
+        out += ' ' + hb(*ghr.minorversion(msg)) + '\n'
+        out += ' ' + hb(*ghr.moresettings(msg)) + '\n'
         del (msg[:6])
         while msg:
-            id = ser.settingid(msg)[1]
-            name = settings.get(id, '<unknown>')
-            length = ser.valuelength(msg)[1]
-            if id == 1:
-                name += ': ' + str(msg[4:4 + length], 'utf-8') + '\n'
-
+            id, name = id_name(msg)
             out += '  ' + hx(*ser.settingid(msg)) + '(%i) %s\n' % (id, name)
             out += '   ' + hb(*ser.largevalue(msg)) + '\n'
             out += '   ' + hb(*ser.readonly(msg)) + '\n'
-            out += '   ' + hx(*ser.valuelength(msg)) + '\n'
+            out += '   ' + hb(*ser.valuelength(msg)) + '\n'
+            length = ser.valuelength(msg)[1]
             del (msg[:4])
-            out += '   value:' + hexify(msg[:length])
+            out += '    value:' + hexify(msg[:length]) + '(%i)\n'%to_n(msg[:length])
             del (msg[:length])
     return out[:-1]
 
@@ -186,43 +196,24 @@ def ss_msg(msg):
     out = ' ' + hx4(*gs.securitycode(msg)) + '\n'
     del(msg[:2])
     while msg:
-        out += '  ' + hx(*se.settingid(msg)) + '\n'
-        out += '  ' + hx(*se.largevalue(msg)) + '\n'
-        out += '  ' + hx(*se.settinglen(msg)) + '\n'
+        id, name = id_name(msg)
+        out += '  ' + hx(*so.settingid(msg)) + '(%i) %s\n' % (id, name)
+        out += '   ' + hb(*se.largevalue(msg)) + '\n'
+        out += '   ' + hb(*se.settinglen(msg)) + '\n'
         length = se.settinglen(msg)[1]
         del(msg[:4])
-        out += '    value:' + hexify(msg[:length])
+        out += '    value:' + hexify(msg[:length]) + '\n'
         del (msg[:length])
     return out[:-1]
 
 def ssr_msg(msg):
-    out = ' ' + hx(*ghr.outcome(msg)) + '\n'
+    out = ' ' + hb(*ghr.outcome(msg)) + '\n'
     del(msg[0])
     while msg:
-        out = '  ' + hx(*so.settingid(msg)) + '\n'
-        out = '  ' + hx(*so.settingoutcome(msg)) + '\n'
+        id, name = id_name(msg)
+        out += '  ' + hx(*so.settingid(msg)) + '(%i) %s\n' % (id, name)
+        out += '   ' + hx(*so.settingoutcome(msg)) + '\n'
         del(msg[:3])
-
-    if len(msg) > 1:
-        out += ' ' + hx(*ghr.devicetype(msg)) + '\n'
-        out += ' ' + hx(*ghr.majorversion(msg)) + '\n'
-        out += ' ' + hx(*ghr.minorversion(msg)) + '\n'
-        out += ' ' + hx(*ghr.moresettings(msg)) + '\n'
-        del (msg[:6])
-        while msg:
-            id = ser.settingid(msg)[1]
-            name = settings.get(id, '<unknown>')
-            length = ser.valuelength(msg)[1]
-            if id == 1:
-                name += ': ' + str(msg[4:4 + length], 'utf-8')
-
-            out += '  ' + hx(*ser.settingid(msg)) + '(%i) %s\n' % (id, name)
-            out += '   ' + hb(*ser.largevalue(msg)) + '\n'
-            out += '   ' + hb(*ser.readonly(msg)) + '\n'
-            out += '   ' + hx(*ser.valuelength(msg)) + '\n'
-            del (msg[:4])
-            out += '   value:' + hexify(msg[:length])
-            del (msg[:length])
     return out[:-1]
 
 def decode_msg(typ, msg):
