@@ -51,7 +51,8 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
 
             s.capture_start()
             time.sleep(.5)
-            al200_cli.sendText(cli_cmd)
+            if cli_cmd:
+                al200_cli.sendText(cli_cmd)
             start = time.time()
             while time.time() < start + 3:
                 # print("Waiting for capture")
