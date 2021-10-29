@@ -1,5 +1,5 @@
-from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.protocols.ind_types import *
-from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.protocols.alert2_decode import *
+from Pylibs.protocols.ind_types import *
+from Pylibs.protocols.alert2_decode import *
 
 import time
 
