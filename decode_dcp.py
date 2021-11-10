@@ -95,56 +95,48 @@ ghr = bit_fields([ # get settings response header
 ])
 
 settings = {
-    1: 'OS Version',
-    30: 'Battery',
-    32: 'SE1 Scaled Reading',
-    35: 'SE1 Raw Reading',
-    45: 'Operation Mode',
-    50: 'RS-232 Baud Rate',
-    55: 'RS-232 Parity',
-    60: 'RS-232 Stop Bits',
-    75: 'CS I/O SDC Address',
-    95: 'Station Source Address',
-    100: 'Destination Address',
-    105: 'Path Service Enabled',
-    110: 'Add Destination Address',
-    130: 'Hop Limit ',
-    155: 'Frame Length',
-    160: 'Slot Length',
-    163: 'Slot offset',
-    170: 'GPS Power On Interval',
-    175: 'GPS On Max',
-    185: 'Last GPS Fix',
-    190: 'Carrier Only time',
-    195: 'AGC time',
-    200: 'Tail time',
-    205: 'Modulation polarity',
-    210: 'Modulation Voltage',
-    215: 'Radio Power Up Mode',
-    220: 'Radio Warm Up',
-    255: 'Multi-Sensor Report',
-    257: 'Self Report Interval',
-    262: 'Configuration Sensor Scan Interval',
-    265: 'SW12 Warm Up Time',
-    267: 'Clock Status in Self Report',
-    268: 'Clock Status Sensor ID',
-    270: 'P1 Enable',
-    310: 'SE1 Mode',
-    312: 'SE1 Sensor ID',
-    315: 'SE1 Transmitted',
-    317: 'C1 Transmitted',
-    325: 'SE1 Multiplier',
-    330: 'SE1 Offset',
-    340: 'SE1 Tx Change',
-    345: 'SDI-12 Command',
-    347: 'C1 Sensor ID',
-    355: 'C1 Mode',
-    356: 'C1 Status',
-    357: 'P1 Transmitted',
-    358: 'TBR Accumulator',
-    359: 'SDI-12 Tx Monitor',
-    360: 'SDI-12 Tx Config',
+1: 'OS Version',
+46: 'Port Protocols',
+50: 'RS-232 Baud Rate',
+55: 'RS-232 Parity',
+60: 'RS-232 Stop Bits',
+61: 'RS-232 HW Flow Control',
+75: 'CS I/O SDC Address',
+95: 'Station Source Address',
+100: 'Destination Address',
+105: 'Path Service Request Enabled',
+110: 'Add Destination Address',
+130: 'Hop Limit',
+155: 'TDMA Frame Length',
+156: 'FEC Mode',
+157: 'Enable TDMA',
+158: 'Center Transmission',
+159: 'TDMA Slot Overrun Behavior',
+160: 'TDMA Slot Length',
+161: 'TDMA Slot Start Offset',
+162: 'TDMA Slot Padding',
+164: 'Encryption Key Rotation Time',
+165: 'Encrypt Outgoing Messages',
+166: 'Encryption Set Key',
+168: 'Encryption EMID',
+169: 'Encryption Key Status',
+170: 'GPS Power On Interval',
+171: 'Encryption Source Address To Configure',
+172: 'Encryption Remove Key',
+175: 'GPS On Max',
+185: 'Last GPS Fix',
+186: 'Tick Lock Loop',
+190: 'Carrier Only time',
+195: 'AGC time',
+200: 'RF Tail Time',
+205: 'Invert Modulation',
+210: 'Modulation Voltage',
+215: 'Radio Power Up Mode',
+220: 'Radio Warm Up',
+257: 'Self Report Interval',
 }
+
+
 
 RESP = 0x80
 Control = 0x13
@@ -159,7 +151,7 @@ def id_name(msg):
     name = settings.get(id, '<unknown>')
     if id == 1:
         length = ser.valuelength(msg)[1]
-        name += ': ' + str(msg[4:4 + length], 'utf-8') + '\n'
+        name += ': ' + str(msg[4:4 + length], 'utf-8')
     return id,name
 
 def gs_msg(msg):
@@ -188,7 +180,8 @@ def gsr_msg(msg):
             out += '   ' + hb(*ser.valuelength(msg)) + '\n'
             length = ser.valuelength(msg)[1]
             del (msg[:4])
-            out += '    value:' + hexify(msg[:length]) + '(%i)\n'%to_n(msg[:length])
+            decimal = ' (%i)\n'%to_n(msg[:length]) if length < 20 else '\n'
+            out += '    value:' + hexify(msg[:length]) + decimal
             del (msg[:length])
     return out[:-1]
 

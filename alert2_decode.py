@@ -84,7 +84,7 @@ def decode_tlv(tlv, d):
         value = value_decode(type, rest[:tlv_length])
         report = '{:0>2x}{{{}}} {}[{}]'.format(type, defn, tlv_length, value)
         return report, rest[tlv_length:]
-    report = '{:0>2x}{{{}}}'.format(type, defn)
+    report = '{:0>2X}{{{}}}'.format(type, defn)
     return report,[]
 
 def decode(flow):
@@ -95,7 +95,7 @@ def decode(flow):
         report, flow = decode_tlv(flow, cp)
         while flow:
             text, flow = decode_tlv(flow, cp)
-            report += ' ' + text
+            report += '\n\t' + text
     return '{}[{}]'.format(n, report)
 
 # decodes
@@ -144,8 +144,11 @@ def setparams(wool):
     return report
 
 def getparams(wool):
-    return ' '.join('{:0>2x}{{{}}}'.format(type, parms.get(type, '--')) for type in wool)
-
+    out = ''
+    while wool:
+        wool, type = xnum_bin(wool)
+        out += ''.join('{:0>2X}{{{}}}'.format(type, parms.get(type, '--')))
+    return out
 # decoders
 # need to protect against bad decoding and then remove data still in stream
 def xnum_hex(pdu): # return 7 bit number or 15 bit number if first bit is high; plus remainder
@@ -280,3 +283,4 @@ if __name__ == "__main__":
     test('414C323262035201B2')
     test('414C323262017C')
     test('414C323262035201B2')
+    test('41 4C 32 32 62 04 0B 02 80 96')
