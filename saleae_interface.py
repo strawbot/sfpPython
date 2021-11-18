@@ -1,6 +1,6 @@
 from saleae import Saleae, PerformanceOption, Trigger
-from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
-from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.protocols.interface.serialHub import SerialPort
+from Pylibs.sfpPort import SfpPort
+from Pylibs.protocols.interface.serialHub import SerialPort
 import os
 import time
 import csv
