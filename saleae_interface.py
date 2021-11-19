@@ -1,6 +1,5 @@
 from saleae import Saleae, PerformanceOption, Trigger
-from Pylibs.sfpPort import SfpPort
-from Pylibs.protocols.interface.serialHub import SerialPort
+from Pylibs.protocols.dev_config_cli import DeviceConfigCLI
 import os
 import time
 import csv
@@ -52,7 +51,7 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
             s.capture_start()
             time.sleep(.5)
             if cli_cmd:
-                al200_cli.sendText(cli_cmd)
+                al200_cli.send_command(cli_cmd)
             start = time.time()
             while time.time() < start + 3:
                 # print("Waiting for capture")
@@ -272,7 +271,7 @@ def reset_all_triggers(saleae, chans):
 
 
 if __name__ == '__main__':
-    cli = SfpPort(SerialPort('COM13'))
+    cli = DeviceConfigCLI('COM34')
     count = 0
     passes = 0
     bad_captures = 0

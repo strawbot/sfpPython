@@ -7,7 +7,7 @@ CONTROL_TERMINAL = [0xbd, 0xf2, 0x13, 0x82, 0x00, 0x00, 0x02, 0x09, 0x68, 0xbd, 
 
 
 def cmd_to_bytes(cmd):
-    return bytes(cmd, 'utf-8')
+    return bytes(cmd + '\r\n', 'utf-8')
 
 
 class DeviceConfigCLI:
@@ -20,12 +20,16 @@ class DeviceConfigCLI:
         return serial.Serial(self.__port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
 
     def init_cli(self):
-        open_port = self.__open_port()
-        open_port.write(bytearray(CONTROL_COMMAND))
-        resp = open_port.readlines()
-        open_port.write(bytearray(CONTROL_TERMINAL))
-        resp2 = open_port.readlines()
-        self.__port = open_port
+        if self.__port:
+            if not self.__port.isOpen():
+                self.__port = self.__open_port()
+        else:
+            self.__port = self.__open_port()
+        self.__port.write(bytearray(CONTROL_COMMAND))
+        resp = self.__port.readlines()
+        self.__port.write(bytearray(CONTROL_TERMINAL))
+        resp2 = self.__port.readlines()
+
 
     def close_port(self):
         self.__port.close()
@@ -48,29 +52,31 @@ class DeviceConfigCLI:
         while True:
             resp = self.read_port()
             if resp or time.time() > end:
-                return resp
+                return resp.decode('utf-8')
 
     def get_whoami(self):
-        self.write_port('whoami\r\n')
+        if not self.is_alive():
+            self.init_cli()
+        self.write_port('whoami')
         return self.parse_whoami(self.get_response(1.0))
 
     @staticmethod
     def parse_whoami(whosit):
         who_dict = {}
         if whosit:
-            lines = whosit.split(b'\n')
+            lines = whosit.split('\n')
             for line in lines:
-                if line.startswith(b'whoami'):
+                if line.startswith('whoami'):
                     continue
-                if line.startswith(b'\ral200:'):
+                if line.startswith('\ral200:'):
                     continue
-                if line.startswith(b'Revision'):
-                    who_dict['Revision'] = line.decode('utf-8').strip('\r\n')[14:]
+                if line.startswith('Revision'):
+                    who_dict['Revision'] = line.strip('\r\n')[14:]
                     continue
-                if line.startswith(b'UTC'):
-                    who_dict['UTC'] = line.decode('utf-8').strip('\r\n')[14:]
+                if line.startswith('UTC'):
+                    who_dict['UTC'] = line.strip('\r\n')[14:]
                     continue
-                spl = line.decode('utf-8').strip('\r\n').split(':')
+                spl = line.strip('\r\n').split(':')
                 who_dict[spl[0].lstrip()] = spl[1].strip()
         return who_dict
 
@@ -78,29 +84,45 @@ class DeviceConfigCLI:
         self.write_port('\r\n')
         resp = self.get_response()
         try:
-            if b'al200:' in resp:
+            if 'al200:' in resp:
                 return True
         except IndexError as e:
             pass
         return False
 
+    def send_cmd_get_resp(self, cmd):
+        # Use this method for commands that generate a single line response, i.e. getting settings
+        if not self.is_alive():
+            self.init_cli()
+        self.write_port(cmd)
+        resp = self.get_response()
+        if resp:
+            idx = resp.find(cmd)
+            if idx >= 0:
+                actual = resp[idx + len(cmd):].split('\n')[0].strip()
+                return actual
+        return ''
+
+    def send_command(self, cmd):
+        # Use this to send commands that don't need a response, i.e. setting settings
+        if not self.is_alive():
+            self.init_cli()
+        self.write_port(cmd)
+        self.get_response()
+
     def restart_device(self):
-        self.write_port('restart')
+        self.send_command('restart')
         time.sleep(.5)
 
 
 if __name__ == '__main__':
     dcc = DeviceConfigCLI('COM33')
-    # dcc.init_cli()
     alive = dcc.is_alive()
     if alive:
         whosit = dcc.get_whoami()
         print(whosit)
-        whosit = dcc.get_whoami()
-        print(whosit)
-        whosit = dcc.get_whoami()
-        print(whosit)
-        whosit = dcc.get_whoami()
-        print(whosit)
-
-
+        dcc.send_command('800 agctime s!')
+        agc = dcc.send_cmd_get_resp('agctime s@ .')
+        dcc.send_command('1 invertmodulation c!')
+        inv = dcc.send_cmd_get_resp('invertmodulation c@ .')
+        print(agc)
