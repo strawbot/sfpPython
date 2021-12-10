@@ -12,12 +12,12 @@ def cmd_to_bytes(cmd):
 
 class DeviceConfigCLI:
     def __init__(self, port_num):
-        self.__port_num = port_num
+        self.port_num = port_num
         self.__port = None
         self.init_cli()  # will open port and send commands via dev config protocol to go to terminal mode
 
     def __open_port(self):
-        return serial.Serial(self.__port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
+        return serial.Serial(self.port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
 
     def init_cli(self):
         if self.__port:
@@ -52,7 +52,10 @@ class DeviceConfigCLI:
         while True:
             resp = self.read_port()
             if resp or time.time() > end:
-                return resp.decode('utf-8')
+                try:
+                    return resp.decode('utf-8')
+                except UnicodeDecodeError as e:
+                    return ''
 
     def get_whoami(self):
         if not self.is_alive():
@@ -82,8 +85,8 @@ class DeviceConfigCLI:
 
     def is_alive(self):
         self.write_port('\r\n')
-        resp = self.get_response()
         try:
+            resp = self.get_response()
             if 'al200:' in resp:
                 return True
         except IndexError as e:
