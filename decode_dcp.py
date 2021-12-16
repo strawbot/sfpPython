@@ -96,6 +96,7 @@ ghr = bit_fields([ # get settings response header
 
 settings = {
 1: 'OS Version',
+33: 'P1 Total',
 46: 'Port Protocols',
 50: 'RS-232 Baud Rate',
 55: 'RS-232 Parity',
@@ -134,6 +135,11 @@ settings = {
 215: 'Radio Power Up Mode',
 220: 'Radio Warm Up',
 257: 'Self Report Interval',
+260: 'Sensor Scan Interval',
+262: 'Configuration Sensor Scan Interval',
+268: 'Clock Status Sensor ID',
+270: 'P1 Enable',
+357: 'P1 Transmitted',
 }
 
 
