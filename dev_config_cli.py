@@ -7,6 +7,7 @@ CONTROL_TERMINAL = [0xbd, 0xf2, 0x13, 0x82, 0x00, 0x00, 0x02, 0x09, 0x68, 0xbd, 
 
 
 def cmd_to_bytes(cmd):
+    # Will turn plain strings into byte strings for sending over serial + carriage return and line feed
     return bytes(cmd + '\r\n', 'utf-8')
 
 
@@ -14,22 +15,23 @@ class DeviceConfigCLI:
     def __init__(self, port_num):
         self.port_num = port_num
         self.__port = None
-        self.init_cli()  # will open port and send commands via dev config protocol to go to terminal mode
+        self.init_cli()  # will initialize port when the class is instantiated
 
     def __open_port(self):
         return serial.Serial(self.port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
 
     def init_cli(self):
+        # Checks if port is open
         if self.__port:
             if not self.__port.isOpen():
                 self.__port = self.__open_port()
         else:
             self.__port = self.__open_port()
+        # Send dev config commands to put unit into terminal mode
         self.__port.write(bytearray(CONTROL_COMMAND))
         resp = self.__port.readlines()
         self.__port.write(bytearray(CONTROL_TERMINAL))
         resp2 = self.__port.readlines()
-
 
     def close_port(self):
         self.__port.close()
@@ -38,6 +40,7 @@ class DeviceConfigCLI:
         self.__port.write(cmd_to_bytes(cmd))
 
     def read_port(self, timeout=0.1):
+        # Reads the response from the serial port with a settable timeout
         end = time.time() + timeout
         collected = b''
         while time.time() < end:
@@ -48,6 +51,7 @@ class DeviceConfigCLI:
         return collected
 
     def get_response(self, timeout=0.5):
+        # Same as read_port but adds a layer for decoding and error handling
         end = time.time() + timeout
         while True:
             resp = self.read_port()
@@ -95,14 +99,16 @@ class DeviceConfigCLI:
 
     def send_cmd_get_resp(self, cmd):
         # Use this method for commands that generate a single line response, i.e. getting settings
-        if not self.is_alive():
+        if not self.is_alive():  # Check if dev config has timed out before sending
             self.init_cli()
         self.write_port(cmd)
         resp = self.get_response()
         if resp:
+            # Parsing response
             idx = resp.find(cmd)
             if idx >= 0:
-                actual = resp[idx + len(cmd):].split('\n')[0].strip()
+                actual = resp[idx + len(cmd):]
+                actual = actual.split('\n')[0].strip()
                 return actual
         return ''
 
@@ -119,7 +125,7 @@ class DeviceConfigCLI:
 
 
 if __name__ == '__main__':
-    dcc = DeviceConfigCLI('COM33')
+    dcc = DeviceConfigCLI('COM34')
     alive = dcc.is_alive()
     if alive:
         whosit = dcc.get_whoami()
