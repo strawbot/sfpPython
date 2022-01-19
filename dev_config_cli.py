@@ -73,18 +73,20 @@ class DeviceConfigCLI:
         if whosit:
             lines = whosit.split('\n')
             for line in lines:
-                if line.startswith('whoami'):
-                    continue
-                if line.startswith('\ral200:'):
-                    continue
-                if line.startswith('Revision'):
-                    who_dict['Revision'] = line.strip('\r\n')[14:]
-                    continue
-                if line.startswith('UTC'):
-                    who_dict['UTC'] = line.strip('\r\n')[14:]
-                    continue
-                spl = line.strip('\r\n').split(':')
-                who_dict[spl[0].lstrip()] = spl[1].strip()
+                if line:
+                    if line.startswith('whoami'):
+                        continue
+                    if line.startswith('\ral200:'):
+                        continue
+                    if line.startswith('Revision'):
+                        who_dict['Revision'] = line.strip('\r\n')[14:]
+                        continue
+                    if line.startswith('UTC'):
+                        who_dict['UTC'] = line.strip('\r\n')[14:]
+                        continue
+                    if ':' in line:
+                        spl = line.strip('\r\n').split(':')
+                        who_dict[spl[0].lstrip()] = spl[1].strip()
         return who_dict
 
     def is_alive(self):
@@ -108,7 +110,7 @@ class DeviceConfigCLI:
             idx = resp.find(cmd)
             if idx >= 0:
                 actual = resp[idx + len(cmd):]
-                actual = actual.split('\n')[0].strip()
+                actual = actual.split('\n')[1].strip()
                 return actual
         return ''
 
