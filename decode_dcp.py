@@ -1,4 +1,5 @@
 import io, traceback, sys
+from protocols.utilities import asciify
 
 if __name__ == "__main__":
     from airlink import bit_fields
@@ -96,7 +97,12 @@ ghr = bit_fields([ # get settings response header
 
 settings = {
 1: 'OS Version',
+30: 'Battery',
+32: 'SE1 Scaled Reading',
 33: 'P1 Total',
+34: 'C1 Scaled Reading',
+35: 'SE1 Raw Reading',
+36: 'C1 Raw Reading',
 46: 'Port Protocols',
 50: 'RS-232 Baud Rate',
 55: 'RS-232 Parity',
@@ -116,6 +122,7 @@ settings = {
 160: 'TDMA Slot Length',
 161: 'TDMA Slot Start Offset',
 162: 'TDMA Slot Padding',
+280: 'TDMA Bytes Remaining',
 164: 'Encryption Key Rotation Time',
 165: 'Encrypt Outgoing Messages',
 166: 'Encryption Set Key',
@@ -134,14 +141,32 @@ settings = {
 210: 'Modulation Voltage',
 215: 'Radio Power Up Mode',
 220: 'Radio Warm Up',
+255: 'Multi-Sensor Report',
 257: 'Self Report Interval',
 260: 'Sensor Scan Interval',
 262: 'Configuration Sensor Scan Interval',
+265: 'SW12 Warm Up Time',
+267: 'Clock Status in Self Report',
 268: 'Clock Status Sensor ID',
 270: 'P1 Enable',
+310: 'SE1 Mode',
+312: 'SE1 Sensor ID',
+315: 'SE1 Transmitted',
+317: 'C1 Transmitted',
+325: 'SE1 Multiplier',
+330: 'SE1 Offset',
+340: 'SE1 Tx Change',
+345: 'SDI-12 Command',
+346: 'SDI-12 Value to Send',
+347: 'C1 Sensor ID',
+348: 'SDI-12 Multiplier',
+349: 'SDI-12 Offset',
+350: 'SDI-12 Tx Change',
+355: 'C1 Mode',
+356: 'C1 Status',
 357: 'P1 Transmitted',
+358: 'TBR Accumulator',
 }
-
 
 
 RESP = 0x80
@@ -296,10 +321,11 @@ def decode_dcp(input):
             return '\n' + hexify(raw) + '\n' + decode_frame(frame)
     else:
         start = input.find(bytes([SYNC]))
-        if start > 0:
-            out = '\nUnframed data: ' + hexify(input[:start])
-            del(input[:start])
-            return out
+        if start == -1 and input:
+            start = len(input)
+        out = asciify(input[:start])
+        del(input[:start])
+        return out
     return ''
 
 if __name__ == "__main__":

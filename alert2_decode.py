@@ -6,6 +6,7 @@ else:
     from .tlv_types_blue_water import d as bw
 import numpy as np
 import sys, traceback
+from protocols.utilities import *
 
 header = b'AL22b'
 
@@ -59,15 +60,6 @@ def toHex(c):
 
 def asciify(s):
     return ''.join([c if isAscii(c) else toHex(c) for c in s])
-
-def hexString(s):
-    return ''.join(map(lambda x: hex(ord(x))[2:], s))
-
-def hexscii(s):
-    if type(s) is type('s'):
-        return bytearray.fromhex(s).decode('utf-8', 'replace')
-    return s
-
 
 # decoders
 def xnum_bin(pdu):  # return 7 bit number or 15 bit number if first bit is high; plus remaining
@@ -283,4 +275,5 @@ if __name__ == "__main__":
     test('414C323262035201B2')
     test('414C323262017C')
     test('414C323262035201B2')
+    test('414C32326219001770020A0114000000682015100201081212032413220276')
     test('41 4C 32 32 62 04 0B 02 80 96')
