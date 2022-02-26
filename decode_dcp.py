@@ -1,11 +1,12 @@
-import io, traceback, sys
-from protocols.utilities import asciify
+import io, traceback, sys, time, serial
+import binascii, struct
 
 if __name__ == "__main__":
     from airlink import bit_fields
 else:
     from .airlink import bit_fields
 
+# string formatting for text output
 def toHex(c):
     if type(c) == type('0'):
         c = ord(c)
@@ -30,17 +31,25 @@ def hx4(s,n):
 def hb(s,n):
     return '{} {}'.format(s,n)
 
-def typify(s,n):
-    index = 0x7F & n
-    types = {0x0F: 'Get Settings',
+msg_types = {0x0F: 'Get Settings',
              0x10: 'Set Settings',
              0x11: 'Get Fragment',
              0x12: 'Set Fragment',
              0x13: 'Control',
              0x14: 'File Send',
-             0x17: 'Discovery'}[index]
+             0x17: 'Discovery'}
+
+def msgType(msgname):
+    for id,name in msg_types.items():
+        if name == msgname:
+            return id
+    return 0
+
+def typify(s,n):
+    index = 0x7F & n
+    type = msg_types.get(index, '<unknown:%X>'%index)
     dir = 'Cmd:' if n < 0x7F else 'Rsp:'
-    return '{} {} {} {}'.format(s,toHex(n)[1:-1],dir,types)
+    return '{} {} {} {}'.format(s,toHex(n)[1:-1],dir,type)
 
 def to_n(msg):
     n = 0
@@ -48,7 +57,7 @@ def to_n(msg):
         n = n << 8 | m
     return n
 
-
+# decoded structures
 h = bit_fields([ #(name, span)
         ("Sync", 8),
         ("Class", 8),
@@ -103,6 +112,7 @@ settings = {
 34: 'C1 Scaled Reading',
 35: 'SE1 Raw Reading',
 36: 'C1 Raw Reading',
+45: 'Operation Mode',
 46: 'Port Protocols',
 50: 'RS-232 Baud Rate',
 55: 'RS-232 Parity',
@@ -122,7 +132,7 @@ settings = {
 160: 'TDMA Slot Length',
 161: 'TDMA Slot Start Offset',
 162: 'TDMA Slot Padding',
-280: 'TDMA Bytes Remaining',
+163: 'TDMA Bytes Remaining',
 164: 'Encryption Key Rotation Time',
 165: 'Encrypt Outgoing Messages',
 166: 'Encryption Set Key',
@@ -131,11 +141,12 @@ settings = {
 170: 'GPS Power On Interval',
 171: 'Encryption Source Address To Configure',
 172: 'Encryption Remove Key',
+173: 'Status',
 175: 'GPS On Max',
 185: 'Last GPS Fix',
 186: 'Tick Lock Loop',
-190: 'Carrier Only time',
-195: 'AGC time',
+190: 'Carrier Only Time',
+195: 'AGC Time',
 200: 'RF Tail Time',
 205: 'Invert Modulation',
 210: 'Modulation Voltage',
@@ -166,9 +177,87 @@ settings = {
 356: 'C1 Status',
 357: 'P1 Transmitted',
 358: 'TBR Accumulator',
+359: 'SDI-12 Tx Monitor',
+360: 'SDI-12 Tx Config',
 }
 
+# add names and return a tuple; can elements be named?
+class dcu_setting:
+    def __init__(self,id,length): self.id = id; self.length = length
 
+AGC_time = dcu_setting(195, 2)
+Add_Destination_Address = dcu_setting(110, 1)
+Battery = dcu_setting(30, 4)
+C1_Mode = dcu_setting(355, 1)
+C1_Raw_Reading = dcu_setting(36, 4)
+C1_Scaled_Reading = dcu_setting(34, 4)
+C1_Sensor_ID = dcu_setting(347, 1)
+C1_Status = dcu_setting(356, 4)
+C1_Transmitted = dcu_setting(317, 4)
+CS_IO_SDC_Address = dcu_setting(75, 1)
+Carrier_Only_time = dcu_setting(190, 2)
+Center_Transmission = dcu_setting(158, 1)
+Clock_Status_Sensor_ID = dcu_setting(268, 1)
+Clock_Status_in_Self_Report = dcu_setting(267, 1)
+Configuration_Sensor_Scan_Interval = dcu_setting(262, 2)
+Destination_Address = dcu_setting(100, 2)
+Enable_TDMA = dcu_setting(157, 1)
+Encrypt_Outgoing_Messages = dcu_setting(165, 1)
+Encryption_EMID = dcu_setting(168, 4)
+Encryption_Key_Rotation_Time = dcu_setting(164, 4)
+Encryption_Key_Status = dcu_setting(169, 10)
+Encryption_Remove_Key = dcu_setting(172, 1)
+Encryption_Set_Key = dcu_setting(166, 33)
+Encryption_Source_Address_To_Configure = dcu_setting(171, 2)
+FEC_Mode = dcu_setting(156, 1)
+GPS_On_Max = dcu_setting(175, 2)
+GPS_Power_On_Interval = dcu_setting(170, 2)
+Hop_Limit = dcu_setting(130, 1)
+Invert_Modulation = dcu_setting(205, 1)
+Last_GPS_Fix = dcu_setting(185, 30)
+Modulation_Voltage = dcu_setting(210, 2)
+MultiSensor_Report = dcu_setting(255, 1)
+OS_Version = dcu_setting(1, 40)
+P1_Enable = dcu_setting(270, 1)
+P1_Total = dcu_setting(33, 2)
+P1_Transmitted = dcu_setting(357, 2)
+Path_Service_Request_Enabled = dcu_setting(105, 1)
+Port_Protocols = dcu_setting(46, 40)
+RF_Tail_Time = dcu_setting(200, 2)
+RS232_Baud_Rate = dcu_setting(50, 1)
+RS232_HW_Flow_Control = dcu_setting(61, 1)
+RS232_Parity = dcu_setting(55, 1)
+RS232_Stop_Bits = dcu_setting(60, 1)
+Radio_Power_Up_Mode = dcu_setting(215, 1)
+Radio_Warm_Up = dcu_setting(220, 4)
+SDI12_Command = dcu_setting(345, 8)
+SDI12_Multiplier = dcu_setting(348, 4)
+SDI12_Offset = dcu_setting(349, 4)
+SDI12_Tx_Change = dcu_setting(350, 4)
+SDI12_Value_to_Send = dcu_setting(346, 1)
+SE1_Mode = dcu_setting(310, 1)
+SE1_Multiplier = dcu_setting(325, 4)
+SE1_Offset = dcu_setting(330, 4)
+SE1_Raw_Reading = dcu_setting(35, 4)
+SE1_Scaled_Reading = dcu_setting(32, 4)
+SE1_Sensor_ID = dcu_setting(312, 1)
+SE1_Transmitted = dcu_setting(315, 4)
+SE1_Tx_Change = dcu_setting(340, 4)
+SW12_Warm_Up_Time = dcu_setting(265, 1)
+Self_Report_Interval = dcu_setting(257, 4)
+Sensor_Scan_Interval = dcu_setting(260, 2)
+Station_Source_Address = dcu_setting(95, 2)
+TBR_Accumulator = dcu_setting(358, 2)
+TDMA_Bytes_Remaining = dcu_setting(163, 2)
+TDMA_Frame_Length = dcu_setting(155, 4)
+TDMA_Slot_Length = dcu_setting(160, 2)
+TDMA_Slot_Overrun_Behavior = dcu_setting(159, 1)
+TDMA_Slot_Padding = dcu_setting(162, 2)
+TDMA_Slot_Start_Offset = dcu_setting(161, 2)
+Tick_Lock_Loop = dcu_setting(186, 40)
+
+
+# message decoding
 RESP = 0x80
 Control = 0x13
 Response = Control + RESP
@@ -258,6 +347,9 @@ def decode_msg(typ, msg):
     return 'Msg:%s'%hexify(msg)
 
 SYNC = 0xBD
+QUOTED = 0xBC
+MASKER = 0x20
+START_SIG = 0xAAAA
 
 def decode_frame(frame):
     f = io.StringIO()
@@ -282,10 +374,7 @@ def decode_frame(frame):
     f.close()
     return a
 
-
 def dequote(frame):
-    QUOTED = 0xBC
-    MASKER = 0x20
     out = bytearray()
     quote = False
     for b in frame:
@@ -294,11 +383,10 @@ def dequote(frame):
         elif quote:
             quote = False
             newb = b - MASKER
-            if newb in [SYNC, QUOTED]:
-                out.append(newb)
-            else:
+            if newb not in [SYNC, QUOTED]:
                 print("Error: not a quoted byte %02X"%newb)
-                out.append(b)
+                newb = b
+            out.append(newb)
         else:
             out.append(b)
     return out
@@ -310,25 +398,294 @@ def decode_dcp(input):
     # then decode
     if input[0] == SYNC and len(input) > 1:
         if input[1] == SYNC:
-            del(input[0])
+            if type(input) == type(bytearray()):
+                del(input[0])
             return ''
         end = input[1:].find(bytes([SYNC]))
         if end != -1:
             end += 2
             raw = bytearray(input[:end])
             frame = dequote(raw)
-            del(input[:end])
+            if type(input) == type(bytearray()):
+                del(input[:end])
             return '\n' + hexify(raw) + '\n' + decode_frame(frame)
     else:
         start = input.find(bytes([SYNC]))
-        if start == -1 and input:
-            start = len(input)
-        out = asciify(input[:start])
-        del(input[:start])
-        return out
+        if start > 0:
+            out = '\nUnframed data: ' + hexify(input[:start])
+            if type(input) == type(bytearray()):
+                del(input[:start])
+            return out
     return ''
 
+def deframe(frame):
+    if frame[0] is SYNC  and  frame[-1] is SYNC:
+        return frame[1:-1]
+    return frame
+
+# encoding; quote SYNC or QUOTED and then wrap in SYNCs
+DCP_CLASS = 0xF2
+
+def encode(frame):
+    encoded = sum([[x] if x not in [SYNC, QUOTED] else [QUOTED, x + MASKER]  for x in frame], start=[])
+    return bytes([SYNC] + encoded + [SYNC])
+
+class dcp_msg(bytearray):
+    tranno = 0x8E
+
+    def add_tranno(msg):
+        msg.append(dcp_msg.tranno)
+        dcp_msg.tranno += 1
+
+    def add_short(msg, value):
+        msg.append(0xFF&(value>>8))
+        msg.append(0xFF&value)
+
+    def add_value(msg, value, length):
+        if type(value) == type(1.0):
+            msg.extend(struct.pack('!f', value))
+        else:
+            while length:
+                length -= 1
+                msg.append(0xFF & (value >> (8 * length)))
+
+'''
+/***********************************************************************
+ *
+ * Signature nullifier functions
+ * Used for PakBus protocol
+ ***********************************************************************/
+static U16 do_sig(U16 old_sig, U8 val) {
+    volatile U16 new_sig;
+    new_sig = (old_sig << 1) & 0x1FF;
+    if (new_sig >= 0x100)
+        new_sig++;
+    new_sig = ((new_sig + ((old_sig >> 8)) + val) & 0xff) | (old_sig << 8);
+    return (new_sig);
+}
+
+Short signature(Byte *msg, Short length) {
+    Short sig = START_SIG;
+    while (length--)
+        sig = do_sig(sig, *msg++);
+    return sig;
+}
+
+U16 end_signature(U16 checksum) {
+    // calculate the value for the most significant byte.
+    // Then run this value through the signature
+    // algorithm using the specified signature as seed.
+    // The calculation is designed to cause the
+    // least significant byte in the signature to become zero.
+    volatile U16 new_seed = (checksum << 1) & 0x1FF;
+    volatile U16 new_sig = checksum;
+    volatile U8 null1, null2;
+
+    if (new_seed >= 0x0100)
+        new_seed++;
+    null1 = (U8)(0x0100 - (new_seed + (checksum >> 8)));
+    new_sig = do_sig(checksum, null1);
+
+    // now perform the same calculation for the most significant byte
+    // in the signature. This time we
+    // will use the signature that was calculated using the first null byte
+    new_seed = (new_sig << 1) & 0x01FF;
+    if (new_seed >= 0x0100)
+        new_seed++;
+    null2 = (U8)(0x0100 - (new_seed + (new_sig >> 8)));
+
+    // now form the return value placing null1 in the most significant byte
+    return null1<<8|null2;
+}
+
+'''
+def get_signature(msg):
+    def do_sig(old_sig, val):
+        new_sig = (old_sig << 1) & 0x1FF
+        if new_sig >= 0x100:
+            new_sig += 1
+        new_sig = ((new_sig + ((old_sig >> 8)) + val) & 0xFF) | (old_sig << 8)
+        return new_sig & 0xFFFF
+
+    def end_sig(checksum):
+        new_seed = (checksum << 1) & 0x1FF
+        new_sig = checksum
+
+        if new_seed >= 0x0100:
+            new_seed += 1
+        null1 = 0xFF & (0x0100 - (new_seed + (checksum >> 8)))
+        new_sig = do_sig(checksum, null1)
+
+        new_seed = (new_sig << 1) & 0x01FF
+        if new_seed >= 0x0100:
+            new_seed += 1
+        null2 = 0xFF & (0x0100 - (new_seed + (new_sig >> 8)))
+
+        return null1<<8|null2
+
+    sig = START_SIG
+    for byte in msg:
+        sig = do_sig(sig, byte)
+    return end_sig(sig)
+
+def new_msg(cmd):
+    msg = dcp_msg()
+    msg.append(DCP_CLASS)
+    msg.append(cmd)
+    msg.add_tranno() # tranno
+    msg.add_short(0) # security code
+    return msg
+
+# API
+def get_settings_frame(settings): # [{setting},]
+    msg = new_msg(GetSettings)
+    ids = [setting.id for setting in settings]
+    msg.add_short(min(ids))
+    msg.add_short(max(ids) + 1)
+    msg.add_short(get_signature(msg))
+    return encode(msg)
+
+def set_settings_frame(pairs): # [{setting,value},]
+    msg = new_msg(SetSettings)
+    for setting,value in zip(pairs[0::2],pairs[1::2]):
+        msg.add_short(setting.id)
+        msg.add_short(setting.length)
+        msg.add_value(value, setting.length)
+
+    msg.add_short(get_signature(msg))
+    return encode(msg)
+
+# communications
+def read_frame(port):
+    frame = bytearray(port.read())
+    frame.extend(port.read(port.inWaiting()))
+    return frame
+
+def dcp_out(port, frame):
+    if port:
+        read_frame(port) # remove any previous replies
+        port.write(frame)
+
+def get_response(port, t=1):
+    if port:
+        time.sleep(t)
+        response = dequote(deframe(read_frame(port)))
+        if get_signature(response) == 0:
+            return response
+    return bytes()
+
+def get_settings(port, settings):
+    dcp_out(port, get_settings_frame(settings))
+    class response(bytearray):
+        def decode(self):
+            self.outcome = self[3]
+            self.devicetype = self[4] * 0x100 + self[6]
+            self.major = self[6]
+            self.minor = self[7]
+            self.settings = dict()
+            tupples = self[9:-2]
+            while tupples:
+                id = tupples.pop(0) * 0x100 + tupples.pop(0)
+                length = (0x3F & tupples.pop(0)) * 0x100 + tupples.pop(0)
+                value = tupples[:length]
+                tupples = tupples[length:]
+                result.settings[id] = value
+
+    result = response(get_response(port))
+    result.decode()
+    return result
+
+def set_settings(port, settings):
+    dcp_out(port, set_settings_frame(settings))
+
+    class response(bytearray):
+        def decode(self):
+            self.outcome = self[3]
+            self.settings = dict()
+            tupples = self[4:-2]
+            while tupples:
+                id = tupples.pop(0) * 0x100 + tupples.pop(0)
+                value = tupples.pop(0)
+                result.settings[id] = value
+
+    result = response(get_response(port))
+    result.decode()
+    return result
+
+
+    response = get_response(port)
+    response.outcome = response[4]
+    settings = response[5:-3]
+    while settings:
+        id = settings.pop(0) * 0x100 + settings.pop(0)
+        result = settings.pop(0)
+        response.settings[id] = result
+    return response
+
+
+def as_float(xxxx):
+    return struct.unpack('!f', xxxx)[0]
+
+def as_unsigned(xxxx):
+    l = len(xxxx)
+    f = '!I' if l == 4 else '!H' if l == 2 else 'B'
+    return struct.unpack(f, xxxx)[0]
+
+def as_signed(xxxx):
+    l = len(xxxx)
+    f = '!i' if l == 4 else '!h' if l == 2 else 'b'
+    return struct.unpack(f, xxxx)[0]
+
+def float_hex(f):
+    return struct.pack('!f', f)
+
+# Test
 if __name__ == "__main__":
+    dcp = serial.Serial('/dev/cu.usbserial-1444330', baudrate=57600, timeout=0.3)
+    pdu = b'\x12\x34\x56\x78\xBD\xBC'
+    frame = dcp_msg()
+    frame.extend(pdu)
+    frame.add_short(get_signature(frame))
+    encoded = encode(frame)
+    deframed = deframe(encoded)
+    decoded = dequote(deframed)
+    print(frame, encoded, decoded, deframed)
+    print(dequote(deframe(encoded)))
+    print("encode:","Pass" if frame == decoded else "Fail")
+    # print("Sig:", get_signature((deframe(b'\xBD\xF2\x13\x9A\x00\x00\x04\x4F\x47\xBD'))))
+    # pdu = dequote(deframe(b'\xBD\xF2\x13\x9A\x00\x00\x04\x4F\x47\xBD'))
+    # print(hx4("Getsig: ", get_signature(pdu[:-2])), '4F47')
+    sig = get_signature(decoded)
+    print("signat:","Pass" if sig == 0 else hx4("Fail",sig))
+
+    frame = set_settings_frame([C1_Mode, 0, P1_Enable, 0, SE1_Mode, 0])
+    print(frame)
+    print(decode_dcp(frame))
+
+    frame = get_settings_frame([C1_Mode, P1_Enable, SE1_Mode])
+    print(frame)
+    print(decode_dcp(frame))
+
+    frame = get_settings_frame([C1_Status, P1_Transmitted, TBR_Accumulator])
+    print(frame)
+    print(decode_dcp(frame))
+
+    set_settings(dcp, [SW12_Warm_Up_Time, 2, P1_Enable, 1, SE1_Multiplier, 1.0])
+    print('Test get settings')
+    result = get_settings(dcp, [SE1_Multiplier, SE1_Sensor_ID, SW12_Warm_Up_Time])
+    print('SE1_Multiplier', as_float(result.settings[SE1_Multiplier.id]))
+    print('SE1_Sensor_ID', as_unsigned(result.settings[SE1_Sensor_ID.id]))
+    print('SW12_Warm_Up_Time', as_signed(result.settings[SW12_Warm_Up_Time.id]))
+
+    print('\nTest set settings')
+    result = set_settings(dcp, [SW12_Warm_Up_Time, 4, P1_Enable, 0, SE1_Multiplier, 2.0])
+    setout = ['','set','not recognized','malformed','read only','no memory']
+    for set,out, in result.settings.items():
+        print(settings[set], setout[out])
+
+    sys.exit(0)
+
+# if __name__ == "__main__":
     devco = bytearray(b'\xBD\xF2\x13\x9A\x00\x00\x04\x4F\x47\xBD')
     al200 = bytearray(b'\xBD\xF2\x93\x9A\x06\xBA\x43\xBD')
     al200a = bytearray(b'\xBD\xF2\x93\x9A')
