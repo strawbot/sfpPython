@@ -574,6 +574,56 @@ def get_response(port, t=1):
             return response
     return bytes()
 
+CommitExit = 1
+LoadOs = 5
+CancelExit = 2
+
+def control_msg(port, command):
+    msg = new_msg(Control)
+    msg.append(command)
+    msg.add_short(get_signature(msg))
+    return get_response(encode(msg))
+
+def cancel_exit(port):
+    return control_msg(CancelExit)
+'''DevCo 1645859454.363:
+ BD F2 13 91 00 00 02 59 B5 BD
+Sync: BD
+Class: F2
+Type: 13 Cmd: Control
+Tranno: 91
+ securitycode: 0000
+ command: Cancel, Exit
+Checksum: 59B5
+Sync: BD
+'''
+def load_os(port):
+    return control_msg(LoadOs)
+''' BD F2 13 92 00 00 05 36 A6 BD
+Sync: BD
+Class: F2
+Type: 13 Cmd: Control
+Tranno: 92
+ securitycode: 0000
+ command: Load OS
+Checksum: 36A6
+Sync: BD
+'''
+
+def commit_exit(port):
+    return control_msg(CommitExit)
+
+''' BD F2 13 9C 00 00 01 1B 32 BD
+Sync: BD
+Class: F2
+Type: 13 Cmd: Control
+Tranno: 9C
+ securitycode: 0000
+ command: Commit, Exit
+Checksum: 1B32
+Sync: BD
+'''
+
 def get_settings(port, settings):
     dcp_out(port, get_settings_frame(settings))
     class response(bytearray):
@@ -596,32 +646,19 @@ def get_settings(port, settings):
     return result
 
 def set_settings(port, settings):
-    dcp_out(port, set_settings_frame(settings))
-
     class response(bytearray):
-        def decode(self):
+        def __init__(self, msg):
+            self.extend(msg)
             self.outcome = self[3]
             self.settings = dict()
             tupples = self[4:-2]
             while tupples:
                 id = tupples.pop(0) * 0x100 + tupples.pop(0)
                 value = tupples.pop(0)
-                result.settings[id] = value
+                self.settings[id] = value
 
-    result = response(get_response(port))
-    result.decode()
-    return result
-
-
-    response = get_response(port)
-    response.outcome = response[4]
-    settings = response[5:-3]
-    while settings:
-        id = settings.pop(0) * 0x100 + settings.pop(0)
-        result = settings.pop(0)
-        response.settings[id] = result
-    return response
-
+    dcp_out(port, set_settings_frame(settings))
+    return response(get_response(port))
 
 def as_float(xxxx):
     return struct.unpack('!f', xxxx)[0]
