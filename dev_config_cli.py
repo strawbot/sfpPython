@@ -122,8 +122,10 @@ class DeviceConfigCLI:
     def sdi12_command(self, cmd):
         resp = self.send_command(cmd)
         if resp.find(cmd) >= 0:
-            time.sleep(.5)
-            resp = self.get_response()
+            time.sleep(1)
+            resp = self.get_response(timeout=1.0)
+            if not resp:
+                resp = self.get_response()
         return resp.split('\r')[0]
 
 
