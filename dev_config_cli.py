@@ -119,6 +119,14 @@ class DeviceConfigCLI:
         self.write_port(cmd)
         return self.get_response()
 
+    def sdi12_command(self, cmd):
+        resp = self.send_command(cmd)
+        if resp.find(cmd) >= 0:
+            time.sleep(.5)
+            resp = self.get_response()
+        return resp.split('\r')[0]
+
+
     def restart_device(self):
         self.send_command('restart')
         time.sleep(.5)
