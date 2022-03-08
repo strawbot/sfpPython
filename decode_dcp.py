@@ -582,10 +582,10 @@ def control_msg(port, command):
     msg = new_msg(Control)
     msg.append(command)
     msg.add_short(get_signature(msg))
-    return get_response(encode(msg))
+    return get_response(dcp_out(port, encode(msg)))
 
 def cancel_exit(port):
-    return control_msg(CancelExit)
+    return control_msg(port, CancelExit)
 '''DevCo 1645859454.363:
  BD F2 13 91 00 00 02 59 B5 BD
 Sync: BD
@@ -598,7 +598,7 @@ Checksum: 59B5
 Sync: BD
 '''
 def load_os(port):
-    return control_msg(LoadOs)
+    return control_msg(port, LoadOs)
 ''' BD F2 13 92 00 00 05 36 A6 BD
 Sync: BD
 Class: F2
@@ -611,7 +611,7 @@ Sync: BD
 '''
 
 def commit_exit(port):
-    return control_msg(CommitExit)
+    return control_msg(port, CommitExit)
 
 ''' BD F2 13 9C 00 00 01 1B 32 BD
 Sync: BD
