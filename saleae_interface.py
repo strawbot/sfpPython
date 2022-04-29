@@ -265,6 +265,19 @@ def get_sine_samples():
         return data
 
 
+def get_raw_samples():
+    with open(filename, 'r') as csvfile:
+        csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
+        count = 0
+        data = []
+        for row in csvreader:
+            try:
+                data.append(float(row['TX']))
+            except ValueError:
+                continue
+    return data
+
+
 def reset_all_triggers(saleae, chans):
     for channel in chans:
         saleae.set_trigger_one_channel(channel, Trigger.NoTrigger)
