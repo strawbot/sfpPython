@@ -20,7 +20,7 @@ def ext(n):
     return bytearray([n])  if  n < 128  else  bytearray([(n>>8)|0x80, n&0xFF])
 
 def make_tlv(tlv_type, data):
-    db = data  if  type(data) == type(bytearray())  else  data_bytes(data)
+    db = data  if  isinstance(data, bytearray)  else  data_bytes(data)
     return ext(tlv_type) + ext(len(db)) + db
 
 def print_hex(h):
