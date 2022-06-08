@@ -55,10 +55,13 @@ def send_to_ind(port):
         port.write(frame)
     del(frame[:])
 
-def get_response(port, t=1):
+def get_response(port, t=2):
     time.sleep(t)
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
+        if frame[:5] != b'AL22b':
+            print("Bad Frame: ", frame.hex())
+            return []
         frame, frame_length = xnumba(frame[5:])
         params = []
         frame = frame[:frame_length]
@@ -70,6 +73,12 @@ def get_response(port, t=1):
     return []
 
 def req_params(port, params):
+    get_params(params)
+    send_to_ind(port)
+    resp = get_response(port)
+    if resp:
+        return resp
+    print('retry once: response not good')
     get_params(params)
     send_to_ind(port)
     return get_response(port)
