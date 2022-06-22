@@ -1,7 +1,8 @@
 from configparser import ConfigParser
 import requests
 
-CONFIG_FILE = '../../config.ini'
+CONFIG_FILE = './config.ini'
+# CONFIG_FILE = '../config.ini'
 
 
 class LoggerAPI:
@@ -13,7 +14,7 @@ class LoggerAPI:
         config = ConfigParser()
         config.optionxform = str
         config.read(CONFIG_FILE)
-        self.ip_address = 'http://' + config['logger']['ip'] + '/'
+        self.ip_address = 'http://' + config['logger'].get('ip') + '/'
 
     def set_var(self, var, value):
         payload = {'command': 'setvalueex', 'uri': self.uri + '.' + var, 'value': str(value), 'format': 'json'}
