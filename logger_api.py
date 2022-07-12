@@ -1,8 +1,10 @@
 from configparser import ConfigParser
 import requests
 
-CONFIG_FILE = './config.ini'
-# CONFIG_FILE = '../config.ini'
+# Need to use this when running from pytest
+# CONFIG_FILE = './config.ini'
+# Use this when running scripts by themselves
+CONFIG_FILE = '../config.ini'
 
 
 class LoggerAPI:
