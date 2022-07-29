@@ -3,6 +3,7 @@ addresslistquery = 0x3B
 tdmabytesremaining = 0x52
 getgpsleapseconds = 0x71
 apiversionnumber = 0x75
+querycurrentconfig = 0x79
 clockstatus = 0x7F
 lastnvsavestatus = 0x8080
 encryptionlistaddresseswithkeys = 0x8088
