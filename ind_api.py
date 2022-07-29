@@ -48,7 +48,7 @@ def read_port(port):
     frame.extend(port.read(port.in_waiting))
     return frame
 
-def send_to_ind(port):
+def send_to_ind(port, port_tx=None):
     frame[0:0] = bytearray(AL22b) + ext(len(frame)) # prepend header
     if port:
         read_port(port) # remove any previous replies
@@ -67,6 +67,10 @@ def get_response(port, t=2):
         frame = frame[:frame_length]
         while frame:
             frame, type = xnumba(frame)
+            if v[type] == string:  # Evaluate if parameter is string type
+                frame, frame_length = xnumba(frame)
+                params.append(frame.decode())
+                return params      # if so just return whole data as is
             frame, value = nvalue(frame)
             params.append(value)
         return params
