@@ -27,7 +27,7 @@ from matplotlib.widgets import Button
 import traceback
 import queue
 import sys, time
-from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
+# from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
 
 
 note('Serial Sampler V1')

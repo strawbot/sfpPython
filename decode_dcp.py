@@ -1,10 +1,11 @@
 import io, traceback, sys, time, serial
 import binascii, struct
+from Pylibs.protocols.airlink import bit_fields
 
-if __name__ == "__main__":
-    from airlink import bit_fields
-else:
-    from .airlink import bit_fields
+# if __name__ == "__main__":
+#     from airlink import bit_fields
+# else:
+#     from .airlink import bit_fields
 
 # string formatting for text output
 def toHex(c):
