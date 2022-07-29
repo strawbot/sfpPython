@@ -6,7 +6,9 @@ else:
     from .tlv_types_blue_water import d as bw
 import numpy as np
 import sys, traceback
-from protocols.utilities import *
+from Pylibs.protocols.utilities import *
+from Pylibs.protocols.tlv_types import p as parms, c as cw
+from Pylibs.protocols.tlv_types_blue_water import d as bw
 
 header = b'AL22b'
 
@@ -167,6 +169,7 @@ def nvalue(pdu): # return count prefixed value and leftover pdu
     return (pdu, n)
 
 
+
 # value decoders by type
 v = {}
 
@@ -190,6 +193,7 @@ v[53] = decimal
 v[54] = decimal
 v[55] = decimal
 v[56] = decimal
+v[57] = decimal
 v[58] = boolean
 v[63] = abled
 v[64] = decimal
@@ -203,8 +207,11 @@ v[76] = decimal
 v[77] = decimal
 v[78] = decimal
 v[79] = boolean
+v[80] = decimal
 v[81] = lambda s: ["Drop", "Overrun"][ord(s)] if ord(s) < 2 else ord(s)
 v[82] = decimal
+v[86] = decimal
+v[87] = decimal
 v[96] = decimal
 v[97] = decimal
 v[98] = decimal
@@ -213,6 +220,7 @@ v[100] = decimal
 v[101] = boolean
 v[102] = decimal
 v[104] = decimal
+v[113] = decimal
 v[117] = decimal
 v[119] = string
 v[120] = decimal
@@ -223,6 +231,7 @@ v[124] = twolong
 v[125] = decimal
 v[126] = decimal
 v[127] = decimal
+v[128] = decimal
 v[130] = boolean
 v[131] = decimal
 v[132] = decimal
@@ -232,6 +241,7 @@ v[135] = decimal
 v[136] = decimal
 v[150] = string
 v[4096] = decimal
+v[4097] = decimal
 v[1001] = lambda s: ['None', 'Odd', 'Even'][ord(s)] if ord(s) < 3 else ord(s)
 v[4098] = decimal
 v[4099] = lambda s: ['None', 'Hardware', 'Software'][ord(s)] if ord(s) < 3 else ord(s)
@@ -241,6 +251,7 @@ v[4104] = lambda s: ['API', 'ALERT Concentration'][ord(s)] if ord(s) < 2 else or
 v[4105] = boolean
 v[4106] = decimal
 v[4107] = decimal
+v[4112] = decimal
 v[4113] = string
 v[4114] = string
 v[4115] = string
