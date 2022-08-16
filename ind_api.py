@@ -69,10 +69,37 @@ def get_response(port, t=2):
             frame, type = xnumba(frame)
             if v[type] == string:  # Evaluate if parameter is string type
                 frame, frame_length = xnumba(frame)
-                params.append(frame.decode())
-                return params      # if so just return whole data as is
+                params.append(frame[:frame_length].decode())
+                frame = frame[frame_length:]
+                continue
             frame, value = nvalue(frame)
             params.append(value)
+        return params
+    return []
+
+def get_config_response(port, t=2):
+    time.sleep(t)
+    if port: # AL22b length parameter tlvs
+        frame = read_port(port)
+        if frame[:5] != b'AL22b':
+            print("Bad Frame: ", frame.hex())
+            return []
+        frame, frame_length = xnumba(frame[5:])
+        params = []
+        frame = frame[:frame_length]
+        while frame:
+            frame, type = xnumba(frame)
+            if type == 59:
+                continue
+            if type == 4108:
+                continue
+            if v[type] == string:  # Evaluate if parameter is string type
+                frame, frame_length = xnumba(frame)
+                params.append(frame[:frame_length].decode())
+                frame = frame[frame_length:]
+                continue
+            frame, value = nvalue(frame)
+            params.append((type, value))
         return params
     return []
 
