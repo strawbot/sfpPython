@@ -95,7 +95,7 @@ def get_config_response(port, t=2):
                 continue
             if v[type] == string:  # Evaluate if parameter is string type
                 frame, frame_length = xnumba(frame)
-                params.append(frame[:frame_length].decode())
+                params.append((type, frame[:frame_length].decode()))
                 frame = frame[frame_length:]
                 continue
             frame, value = nvalue(frame)
