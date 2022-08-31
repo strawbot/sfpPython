@@ -120,14 +120,21 @@ class DeviceConfigCLI:
         return self.get_response()
 
     def sdi12_command(self, cmd):
-        resp = self.send_command(cmd)
+        sdi_12 = []
+        resp = self.send_command('z ' + cmd)
         if resp.find(cmd) >= 0:
             time.sleep(1)
             resp = self.get_response(timeout=1.0)
             if not resp:
                 resp = self.get_response()
-        return resp.split('\r')[0]
-
+            for r in resp.split('\n'):
+                if r:
+                    if r.startswith('\r'):
+                        continue
+                    if r.startswith('No'):
+                        sdi_12.append(r)
+                    sdi_12.append((r.split('  ')[0], r.split('  ')[1]))
+        return sdi_12
 
     def restart_device(self):
         self.send_command('restart')
