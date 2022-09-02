@@ -123,10 +123,13 @@ class DeviceConfigCLI:
         sdi_12 = []
         resp = self.send_command('z ' + cmd)
         if resp.find(cmd) >= 0:
+            print("Raw cmd response: {}".format(resp))
             time.sleep(1)
             resp = self.get_response(timeout=1.0)
+            print("Raw response: {}".format(resp))
             if not resp:
                 resp = self.get_response()
+                print("Retry raw resp: {}".format(resp))
             for r in resp.split('\n'):
                 if r:
                     if r.startswith('\r'):
