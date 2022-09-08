@@ -54,13 +54,16 @@ class DeviceConfigCLI:
     def get_response(self, timeout=0.5):
         # Same as read_port but adds a layer for decoding and error handling
         end = time.time() + timeout
-        while True:
+        collected = ''
+        while time.time() < end:
             resp = self.read_port()
-            if resp or time.time() > end:
+            if resp:
+                end = time.time() + timeout
                 try:
-                    return resp.decode('utf-8')
+                    collected += resp.decode('utf-8')
                 except UnicodeDecodeError as e:
-                    return ''
+                    continue
+        return collected
 
     def get_whoami(self):
         if not self.is_alive():
@@ -124,7 +127,7 @@ class DeviceConfigCLI:
         resp = self.send_command('z ' + cmd)
         if resp.find(cmd) >= 0:
             print("Raw cmd response: {}".format(resp))
-            time.sleep(1)
+            # time.sleep(1)
             resp = self.get_response(timeout=1.0)
             print("Raw response: {}".format(resp))
             if not resp:
