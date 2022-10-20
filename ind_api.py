@@ -50,8 +50,9 @@ def read_port(port):
 
 def send_to_ind(port, port_tx=None):
     frame[0:0] = bytearray(AL22b) + ext(len(frame)) # prepend header
+    # print(hex_by2(frame))
     if port:
-        read_port(port) # remove any previous replies
+        read_port(port)  # remove any previous replies
         port.write(frame)
     del(frame[:])
 

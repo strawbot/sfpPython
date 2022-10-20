@@ -1,4 +1,3 @@
-# parameter, command and message type definitions
 addresslistquery = 0x3B
 tdmabytesremaining = 0x52
 getgpsleapseconds = 0x71
@@ -112,6 +111,3 @@ AirLink_Noise_Level = 0x8452
 Number_MANT_PDUs_Seccessfully_Decoded = 0x8453
 AirLink_Error = 0x8454
 AirLink_Error_Description = 0x8455
-
-
-
