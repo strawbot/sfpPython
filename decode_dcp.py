@@ -740,4 +740,7 @@ if __name__ == "x__main__":
     for set,out, in result.settings.items():
         print(settings[set], setout[out])
 
+    pdu = b'\x12\x34\x56\x78\xBD\xBC'
+    print(dequote(deframe(encode(dcp_msg(pdu)))))
+
     sys.exit(0)

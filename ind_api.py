@@ -3,7 +3,28 @@ from Pylibs.protocols.alert2_decode import *
 
 import time
 
-AL22b = [0x41, 0x4C, 0x32, 0x32, 0x62]
+AL22b = [ord(c) for c in 'AL22b']
+ALERT2 = [ord(c) for c in 'ALERT2']
+ALERT2B = [ord(c) for c in 'ALERT2B']
+prefix = AL22b
+
+def alert():
+    if prefix == AL22b:
+        return 2.0
+    if prefix == ALERT2B:
+        return 1.1
+    if prefix == ALERT2:
+        return 1.0
+
+def ind_api(version):
+    global prefix
+    if version == 1.0:
+        prefix = ALERT2
+    elif version == 1.1:
+        prefix = ALERT2B
+    else:
+        prefix = AL22b
+
 frame = bytearray()
 
 # tools
@@ -34,7 +55,10 @@ def set_params(params):
     tlvs = bytearray()
     for p,d in zip(params[0::2],params[1::2]):
         tlvs.extend(make_tlv(p,d))
-    add_command(Set_Parameter, tlvs)
+    if alert() == 2.0:
+        add_command(Set_Parameter, tlvs)
+    else:
+        frame.extend(tlvs)
 
 def get_params(params):
     ps = bytearray()
@@ -48,19 +72,20 @@ def read_port(port):
     frame.extend(port.read(port.in_waiting))
     return frame
 
-def send_to_ind(port, port_tx=None):
-    frame[0:0] = bytearray(AL22b) + ext(len(frame)) # prepend header
-    # print(hex_by2(frame))
-    if port:
-        read_port(port)  # remove any previous replies
-        port.write(frame)
+def send_to_ind(port, port2 = None):
+    frame[0:0] = bytearray(prefix) + ext(len(frame)) # prepend header
+    for port in (port, port2):
+        if port:
+            read_port(port) # remove any previous replies
+            port.write(frame)
+    print(frame.hex())
     del(frame[:])
 
 def get_response(port, t=2):
     time.sleep(t)
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
-        if frame[:5] != b'AL22b':
+        if frame[:5] != bytearray(prefix):
             print("Bad Frame: ", frame.hex())
             return []
         frame, frame_length = xnumba(frame[5:])
@@ -72,9 +97,9 @@ def get_response(port, t=2):
                 frame, frame_length = xnumba(frame)
                 params.append(frame[:frame_length].decode())
                 frame = frame[frame_length:]
-                continue
-            frame, value = nvalue(frame)
-            params.append(value)
+            else:
+                frame, value = nvalue(frame)
+                params.append((type, value))
         return params
     return []
 
@@ -135,17 +160,33 @@ def req_params(port, params):
 
 
 if __name__ == '__main__':
-    print_hex(bytearray([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,255,254,253,252,251,250,249,248,247,246,245,244,243,242,241,240]))
-    print_hex(make_tlv(Set_Parameter, 128))
-    print_hex(make_tlv(Set_Parameter, 256))
-    print_hex(make_tlv(Set_Parameter, 65536))
-    print_hex(ext(125))
-    print_hex(ext(128))
-    print_hex(ext(0x8081))
-    set_params([tdmaframelength,257])
-    send_to_ind(None)
-    get_params([tdmaslotlength, tdmaframelength, tdmaslotoffset])
-    send_to_ind(None)
+    import  serial
+    AL200 = serial.Serial("/dev/cu.usbserial-143210", baudrate=115200, timeout=1.0)
+    # print_hex(bytearray([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,255,254,253,252,251,250,249,248,247,246,245,244,243,242,241,240]))
+    # print_hex(make_tlv(Set_Parameter, 128))
+    # print_hex(make_tlv(Set_Parameter, 256))
+    # print_hex(make_tlv(Set_Parameter, 65536))
+    # print_hex(ext(125))
+    # print_hex(ext(128))
+    # print_hex(ext(0x8081))
+    set_params([tdmaframelength,20000])
+    send_to_ind(AL200)
+    print(req_params(AL200, [tdmaslotlength, tdmaframelength, tdmaslotoffset]))
+    # send_to_ind(AL200)
     set_params([tdmaslotlength,1000, tdmaframelength,60000, tdmaslotoffset,30000])
     add_command(Save_Configuration)
-    send_to_ind(None)
+    send_to_ind(AL200)
+    add_command(Query_Current_Configuration)
+    send_to_ind(AL200)
+    print(get_response(AL200))
+    sys.exit(0)
+
+    AL205B = serial.Serial('/dev/cu.usbserial-1430', baudrate=57600, timeout=1.0)
+    ind_api(1.0)
+
+    set_params([tdmaslotlength,1000, tdmaframelength,6000, tdmaslotoffset,3000])
+    add_command(Save_Configuration)
+    send_to_ind(AL205B)
+    add_command(Query_Current_Configuration)
+    send_to_ind(AL205B)
+

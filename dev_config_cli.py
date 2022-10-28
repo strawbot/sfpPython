@@ -40,7 +40,7 @@ class DeviceConfigCLI:
     def write_port(self, cmd):
         self.__port.write(cmd_to_bytes(cmd))
 
-    def read_port(self, timeout=0.1):
+    def read_port(self, timeout=1):
         # Reads the response from the serial port with a settable timeout
         end = time.time() + timeout
         collected = b''

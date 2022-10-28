@@ -1,3 +1,6 @@
+import numpy as np
+import sys, traceback, os
+
 if __name__ == "__main__":
     from tlv_types import p as parms, c as cw
     from tlv_types_blue_water import d as bw
@@ -162,13 +165,23 @@ def xnumba(pdu): # return 7 bit number or 15 bit number if first bit is high; pl
     return (pdu,None)
 
 def nvalue(pdu): # return count prefixed value and leftover pdu
+    if len(pdu) == 0:
+        return (pdu,0)
     pdu, length = xnumba(pdu)
-    n = 0
+    v = 0
+    raw = bytearray()
     for i in range(length):
-        n = (n << 8) + pdu.pop(0) if pdu else n
+        raw.append(pdu[0] if pdu else 0)
+        v = ((v << 8) + pdu.pop(0)) if pdu else v
+
+    class num(int):
+        length = 0
+        raw = bytearray()
+
+    n = num(v)
+    n.length = length
+    n.raw.extend(raw)
     return (pdu, n)
-
-
 
 # value decoders by type
 v = {}
@@ -289,3 +302,4 @@ if __name__ == "__main__":
     test('414C323262035201B2')
     test('414C32326219001770020A0114000000682015100201081212032413220276')
     test('41 4C 32 32 62 04 0B 02 80 96')
+    test('41 4C 45 52 54 32 31 13 00 14 2D 84 00 07 06 00 10 0D 00 10 00 84 01 0D 70 05 0A 3F 03 7B 01 0F 00 00 00 F9 00 84 02 04 62 B9 E2 35 84 03 01 00 7D 06 01 81 A6 1B A2 2F')
