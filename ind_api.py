@@ -93,13 +93,13 @@ def get_response(port, t=2):
         frame = frame[:frame_length]
         while frame:
             frame, type = xnumba(frame)
-            if v[type] == string:  # Evaluate if parameter is string type
+            if v.get(type, None) == string:  # Evaluate if parameter is string type
                 frame, frame_length = xnumba(frame)
                 params.append(frame[:frame_length].decode())
                 frame = frame[frame_length:]
             else:
                 frame, value = nvalue(frame)
-                params.append((type, value))
+                params.append(value)
         return params
     return []
 
