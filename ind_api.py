@@ -91,6 +91,7 @@ def get_response(port, t=2):
         frame, frame_length = xnumba(frame[5:])
         params = []
         frame = frame[:frame_length]
+        print_hex(frame)
         while frame:
             frame, type = xnumba(frame)
             if v.get(type, None) == string:  # Evaluate if parameter is string type
@@ -161,7 +162,8 @@ def req_params(port, params):
 
 if __name__ == '__main__':
     import  serial
-    AL200 = serial.Serial("/dev/cu.usbserial-143210", baudrate=115200, timeout=1.0)
+    AL200_CSIO = serial.Serial("/dev/cu.usbserial-143210", baudrate=115200, timeout=1.0)
+    AL200_RS232 = serial.Serial("/dev/cu.usbserial-FTGCQG7I", baudrate=57600, timeout=1.0)
     # print_hex(bytearray([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,255,254,253,252,251,250,249,248,247,246,245,244,243,242,241,240]))
     # print_hex(make_tlv(Set_Parameter, 128))
     # print_hex(make_tlv(Set_Parameter, 256))
@@ -169,6 +171,9 @@ if __name__ == '__main__':
     # print_hex(ext(125))
     # print_hex(ext(128))
     # print_hex(ext(0x8081))
+    AL200 = AL200_RS232
+    # AL200 = AL200_CSIO
+
     set_params([tdmaframelength,20000])
     send_to_ind(AL200)
     print(req_params(AL200, [tdmaslotlength, tdmaframelength, tdmaslotoffset]))
