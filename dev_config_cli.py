@@ -128,14 +128,18 @@ class DeviceConfigCLI:
         if resp.find(cmd) >= 0:
             print("Raw cmd response: {}".format(resp))
             # time.sleep(1)
-            resp = self.get_response(timeout=1.0)
-            print("Raw response: {}".format(resp))
+            # resp = self.get_response(timeout=1.0)
+            # print("Raw response: {}".format(resp))
             if not resp:
                 resp = self.get_response()
                 print("Retry raw resp: {}".format(resp))
             for r in resp.split('\n'):
                 if r:
                     if r.startswith('\r'):
+                        continue
+                    if r.startswith('z'):
+                        continue
+                    if r.startswith('al200:'):
                         continue
                     if r.startswith('No'):
                         sdi_12.append(r)
