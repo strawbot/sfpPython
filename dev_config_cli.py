@@ -143,6 +143,7 @@ class DeviceConfigCLI:
                         continue
                     if r.startswith('No'):
                         sdi_12.append(r)
+                        return sdi_12
                     sdi_12.append((r.split('  ')[0], r.split('  ')[1]))
         return sdi_12
 
