@@ -122,7 +122,7 @@ def get_tlv_response(port, t=2):
             return params
     return []
 
-def get_config_response(port, t=2):
+def get_config_response(port, t=2, report=False):
     time.sleep(t)
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
@@ -130,6 +130,11 @@ def get_config_response(port, t=2):
             print("Bad Frame: ", frame.hex())
             return []
         frame, frame_length = xnumba(frame[5:])
+        if report:
+            print(frame.hex())
+        if len(frame) != frame_length:
+            print("Wrong frame size. Says %i  actual %i"%(frame_length, len(frame)))
+            raise()
         params = []
         frame = frame[:frame_length]
         while frame:
