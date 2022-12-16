@@ -47,6 +47,9 @@ def make_tlv(tlv_type, data):
 def print_hex(h):
     print(''.join([' %02X'% x for x in h]))
 
+def hex_nums(h):
+    return ''.join([' %02X'% x for x in h])
+
 # commands
 def add_command(command, value=bytearray()):
     frame.extend(make_tlv(command, value))
@@ -91,7 +94,7 @@ def get_response(port, t=2):
         frame, frame_length = xnumba(frame[5:])
         params = []
         frame = frame[:frame_length]
-        print_hex(frame)
+        print("Resp: {}".format(hex_nums(frame)))
         while frame:
             frame, type = xnumba(frame)
             if v.get(type, None) == string:  # Evaluate if parameter is string type
