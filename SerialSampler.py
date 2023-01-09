@@ -7,12 +7,14 @@ if __name__ == '__main__':
     from interface.serialHub import SerialPort as SerialPort
     from interface.message import note as note
     from display_info import width_dots, height_dots
-    from saleae_interface import *
+    # from saleae_interface import *
+    from saleae_logic2 import analog_rate, get_capture_data
 else:
     from .interface.serialHub import SerialPort as SerialPort
     from .interface.message import note as note
     from .display_info import width_dots, height_dots
-    from .saleae_interface import *
+    # from .saleae_interface import *
+    from .saleae_logic2 import analog_rate, get_capture_data
 
 from numpy.lib.function_base import average, median
 from scipy import signal
@@ -157,7 +159,7 @@ def removeDC(samps):
 def resamp(samps):
     # resample to 9 samples/bit
     OVERSAMPLE = 18
-    Fs = sample_rate[1] # samples counted on agc peak to peak
+    Fs = analog_rate # samples counted on agc peak to peak
     waveforms.set_raw_sample_rate(Fs) # Capture sample rate before resampling
     w = fft(samps[50:len(samps)//4])
     freqs = np.fft.fftfreq(len(w))
@@ -211,12 +213,13 @@ def sign(n):
     return n < 0
 
 def trimmers(samps):
-    avg = average(samps)
+    off = int(len(samps) * 0.02)
+    avg = average(samps[off:-off])
     nodc = np.array(samps) - avg
     rect = np.absolute(nodc)
-    window = 20
+    window = 100
     medi = pd.Series(rect).rolling(window).median()
-    level = np.max(medi)/5
+    level = np.max(medi)/3
     first = np.argmax(medi>level)
     last = first + np.argmax(medi[first:]<level)
     return first, last
@@ -518,7 +521,7 @@ def process_metrics():
 
 
 if __name__ == '__main__':
-    from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
+    # from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
     # stream = open_stream('COM7')
 
     # process_metrics()
@@ -526,7 +529,7 @@ if __name__ == '__main__':
     # sys.exit(0)
     # al2 = SfpPort(SerialPort('COM13'))
     # capture_frames(al2)
-    samples = get_transmission()
+    samples = get_capture_data()
 
 
     # samples = capture()
@@ -553,7 +556,7 @@ if __name__ == '__main__':
         showbitz.append([waveforms.sy, 'bit synced'])
         waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
         showbitz.append([waveforms.by, 'bytes', waveforms.bynotes])
-        verify(waveforms.by)
+        # verify(waveforms.by)
     except Exception as e:
         print(e, file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
