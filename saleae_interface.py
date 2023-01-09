@@ -7,8 +7,8 @@ import csv
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/test.csv'
 filename2 = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/rftail_wave_small.csv'
-digital_rate = 50000000
-analog_rate = 125000
+digital_rate = 0
+analog_rate = 0
 sample_rate = (digital_rate, analog_rate)
 
 
@@ -49,9 +49,10 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
                     break
 
             s.capture_start()
-            time.sleep(.5)
+            # time.sleep(1.5)
             if cli_cmd:
                 al200_cli.send_command(cli_cmd)
+            # s.capture_start()
             start = time.time()
             while time.time() < start + 3:
                 # print("Waiting for capture")
@@ -63,7 +64,7 @@ def capture_samples(al200_cli, digital_channels, analog_channels, trigger_channe
                 pass
             except s.CommandNAKedError:
                 return False
-            time.sleep(1)
+            # time.sleep(1)
 
             print("Exporting data to csv")
             s.export_data2(filename, analog_channels=analog_channels)
@@ -163,10 +164,10 @@ def is_just_frame(csvreader):
                 return False
     return True
 
-def get_transmission():
-    with open(filename, 'r') as csvfile:
+def get_transmission(file):
+    with open(file, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
-        HEADS, PTT, PTTHI, PTTLO, LOWAIT, HIWAIT, CAPTURE = range(7)
+        HEADS, PTT, PTTLO, PTTHI, CAPTURE = range(5)
         state = HEADS
         data = []
         try:
@@ -180,20 +181,14 @@ def get_transmission():
                         state = PTTHI
                     if ptt < 0.04:
                         state = PTTLO
+                if state is PTTLO:
+                    if float(row['PTT']) > 3.0:
+                        state = PTTHI
                 if state is PTTHI:
                     if float(row['Time']) >= 0.0:
-                        state = LOWAIT
-                if state is PTTLO:
-                    if float(row['Time']) >= 0.0:
-                        state = HIWAIT
-                if state is HIWAIT:
-                    if float(row['PTT']) > 4.0:
-                        state = LOWAIT
-                if state is LOWAIT:
-                    if float(row['PTT']) < 0.04:
                         state = CAPTURE
                 if state is CAPTURE:
-                    if float(row['PTT']) > 4.0:
+                    if float(row['PTT']) > 3.0:
                         break
                     data.append(float(row['TX']))
         except ValueError:
