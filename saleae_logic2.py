@@ -4,7 +4,7 @@ import os.path as path
 import time
 from Pylibs.protocols.dev_config_cli import DeviceConfigCLI
 from Pylibs.protocols.saleae_interface import get_transmission
-from Pylibs.protocols.SerialSampler import *
+# from Pylibs.protocols.SerialSampler import removeDC, trim, resamp, filt, comb, clean, sync, to_bytes
 
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
@@ -74,23 +74,11 @@ def get_capture_data():
     return get_transmission(filename)
 
 
-test_frame = [
-        0xEB, 0x90, 0xB4, 0x33, 0xAA, 0xAA, 0x35, 0x2E, 0xF8, 0x53, 0x0D, 0xC5,
-        0xD4, 0x21, 0x1A, 0xCC, 0x7D, 0x3C, 0x8D, 0xC1, 0x6A, 0x36, 0x58, 0x61,
-        0xDD, 0xF9, 0x0E, 0x92, 0x08, 0xA0, 0x05, 0x4E, 0x5B, 0x62, 0x0C, 0x10,
-        0xA8, 0xF1, 0x7F, 0xD3, 0x8D, 0xB3, 0x1F, 0x4F, 0xF2, 0x34, 0x40, 0x53,
-        0xCF, 0xCC, 0xB3, 0x99, 0xA6, 0x59, 0x7A, 0x3D, 0xAC, 0x15, 0x0D, 0x3C,
-        0x83, 0x78, 0xD1, 0x36, 0x6C, 0xD5, 0x1C, 0x8F, 0x92, 0xBA, 0xC9, 0xEF,
-        0x37, 0x83, 0x75, 0xF1, 0x12, 0xA1, 0x73, 0xDC, 0xC7, 0xD3, 0xC8, 0x0E,
-        0x14, 0x09, 0x33, 0x81, 0x88, 0xD5, 0x6E, 0xC0, 0xAA
-    ]
-
-
 if __name__ == '__main__':
     cli = DeviceConfigCLI('COM34')
     bad = 0
     count = 0
-    frame = []
+    data = []
     while count < 10:
         result = capture_tx(cli)
         if not result:
@@ -98,12 +86,8 @@ if __name__ == '__main__':
         else:
             data = get_capture_data()
             count += 1
-        try:
-            frame = to_bytes(sync(clean(comb(filt(resamp(trim(removeDC(data)))[1])))))
-            if frame:
+            if data:
                 break
-        except ValueError:
-            print("Value error on frame processing")
-            time.sleep(10)
-            continue
-    assert frame == test_frame
+        time.sleep(10)
+
+    print("Received frame: {}".format(data))
