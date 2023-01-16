@@ -260,8 +260,8 @@ def get_sine_samples():
         return data
 
 
-def get_raw_samples():
-    with open(filename, 'r') as csvfile:
+def get_raw_samples(file):
+    with open(file, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
         count = 0
         data = []
