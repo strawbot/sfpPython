@@ -3,7 +3,7 @@ import os
 import os.path as path
 import time
 from Pylibs.protocols.dev_config_cli import DeviceConfigCLI
-from Pylibs.protocols.saleae_interface import get_transmission
+from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples
 # from Pylibs.protocols.SerialSampler import removeDC, trim, resamp, filt, comb, clean, sync, to_bytes
 
 
@@ -39,6 +39,13 @@ class Configurations:
         buffer_size_megabytes=3000
     )
 
+    square_capture_config = automation.CaptureConfiguration(
+        capture_mode=automation.TimedCaptureMode(
+            duration_seconds=2,
+            trim_data_seconds=2
+        )
+    )
+
 
 def delete_export_file():
     if path.exists(filename):
@@ -70,8 +77,36 @@ def capture_tx(al2_cli, after_trigger_seconds=1):
             print("Saleae export error")
             return False
 
+
+def capture_square_wave(al2_cli):
+    with automation.Manager.connect(port=10430) as manager:
+        try:
+            config = Configurations()
+            al2_cli.send_command('square')
+            with manager.start_capture(device_configuration=Configurations.tx_device_config,
+                                       capture_configuration=config.square_capture_config
+                                       ) as capture:
+                capture.wait()
+
+                delete_export_file()
+                capture.export_raw_data_csv(directory=directory,
+                                            analog_channels=Configurations.tx_device_config.enabled_analog_channels)
+
+            return True
+        except automation.CaptureError:
+            print("Saleae capture error")
+            return False
+        except automation.ExportError:
+            print("Saleae export error")
+            return False
+
+
 def get_capture_data():
     return get_transmission(filename)
+
+
+def get_raw_data():
+    return get_raw_samples(filename)
 
 
 if __name__ == '__main__':
