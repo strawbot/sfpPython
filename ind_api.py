@@ -47,6 +47,9 @@ def make_tlv(tlv_type, data):
 def print_hex(h):
     print(''.join([' %02X'% x for x in h]))
 
+def print_hex_0x(h):
+    print(''.join(['0x' + '%02X '% x for x in h]))
+
 def hex_nums(h):
     return ''.join([' %02X'% x for x in h])
 

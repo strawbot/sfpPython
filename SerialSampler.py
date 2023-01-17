@@ -556,7 +556,7 @@ if __name__ == '__main__':
         showbitz.append([waveforms.sy, 'bit synced'])
         waveforms.by,waveforms.bynotes = frame_bytes(to_bytes(waveforms.sy))
         showbitz.append([waveforms.by, 'bytes', waveforms.bynotes])
-        # verify(waveforms.by)
+        verify(waveforms.by)
     except Exception as e:
         print(e, file=sys.stderr)
         traceback.print_exc(file=sys.stderr)

@@ -117,8 +117,8 @@ class DeviceConfigCLI:
 
     def send_command(self, cmd):
         # Use this to send commands that don't need a response, i.e. setting settings
-        if not self.is_alive():  # Check if dev config has timed out before sending
-            self.init_cli()
+        # if not self.is_alive():  # Check if dev config has timed out before sending
+        #     self.init_cli()
         self.write_port(cmd)
         return self.get_response()
 
