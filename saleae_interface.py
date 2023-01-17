@@ -222,8 +222,8 @@ def get_transmission_plus_rx():
             return []
         return tx_data, rx_data
 
-def get_radio_warmup_samples():
-    with open(filename, 'r') as csvfile:
+def get_radio_warmup_samples(file):
+    with open(file, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT', 'SW-12 V'])
         count = 0
         samples = 0
@@ -244,8 +244,8 @@ def get_radio_warmup_samples():
         return 0
 
 
-def get_sine_samples():
-    with open(filename, 'r') as csvfile:
+def get_sine_samples(file):
+    with open(file, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT'])
         count = 0
         data = []
