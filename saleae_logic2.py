@@ -38,7 +38,7 @@ class Configurations:
             trigger_channel_index=1,
             after_trigger_seconds=1
         ),
-        buffer_size_megabytes=3000
+        buffer_size_megabytes=100
     )
 
     # Capture config for square wave used to measure gain
@@ -47,7 +47,7 @@ class Configurations:
             duration_seconds=2,
             trim_data_seconds=2
         ),
-        buffer_size_megabytes=3000
+        buffer_size_megabytes=100
     )
 
     # Device config for checking radio warmup timing
@@ -69,7 +69,7 @@ class Configurations:
             trigger_channel_index=2,
             after_trigger_seconds=3
         ),
-        buffer_size_megabytes=4000
+        buffer_size_megabytes=100
     )
 
     sine_wave_device_config = automation.LogicDeviceConfiguration(
