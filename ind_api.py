@@ -97,7 +97,7 @@ def get_response(port, t=2):
         frame, frame_length = xnumba(frame[5:])
         params = []
         frame = frame[:frame_length]
-        print("Resp: {}".format(hex_nums(frame)))
+        # print("Resp: {}".format(hex_nums(frame)))
         while frame:
             frame, type = xnumba(frame)
             if v.get(type, None) == string:  # Evaluate if parameter is string type
