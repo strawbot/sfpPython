@@ -162,6 +162,7 @@ settings = {
 310: 'SE1 Mode',
 312: 'SE1 Sensor ID',
 315: 'SE1 Transmitted',
+314: 'Health',
 317: 'C1 Transmitted',
 325: 'SE1 Multiplier',
 330: 'SE1 Offset',
@@ -250,6 +251,7 @@ P1_Transmitted = dcu_setting(357, 2)
 TBR_Accumulator = dcu_setting(358, 2)
 SDI12_Sensor_Monitor = dcu_setting(361, 2)
 ALERT2_to_SDI12_Sensors_Mapping = dcu_setting(362, 8)
+Health = dcu_setting(314, 1)
 
 # message decoding
 RESP = 0x80
@@ -695,8 +697,8 @@ if __name__ == "__main__":
     print(decode_dcp(al200g))
 
 
-if __name__ == "x__main__":
-    dcp = serial.Serial('/dev/cu.usbserial-1444330', baudrate=57600, timeout=0.3)
+if __name__ == "__main__":
+    dcp = serial.Serial('COM34', baudrate=57600, timeout=0.3)
     pdu = b'\x12\x34\x56\x78\xBD\xBC'
     frame = dcp_msg()
     frame.extend(pdu)
