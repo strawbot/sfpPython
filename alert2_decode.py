@@ -4,14 +4,13 @@ import sys, traceback, os
 if __name__ == "__main__":
     from tlv_types import p as parms, c as cw
     from tlv_types_blue_water import d as bw
+    from utilities import *
 else:
     from .tlv_types import p as parms, c as cw
     from .tlv_types_blue_water import d as bw
+    from .utilities import *
 import numpy as np
 import sys, traceback
-from Pylibs.protocols.utilities import *
-from Pylibs.protocols.tlv_types import p as parms, c as cw
-from Pylibs.protocols.tlv_types_blue_water import d as bw
 
 header = b'AL22b'
 
@@ -62,9 +61,6 @@ def isAscii(c):
 
 def toHex(c):
     return '<' + hex(ord(c))[2:] + '>'
-
-def asciify(s):
-    return ''.join([c if isAscii(c) else toHex(c) for c in s])
 
 # decoders
 def xnum_bin(pdu):  # return 7 bit number or 15 bit number if first bit is high; plus remaining
@@ -131,7 +127,7 @@ def boolean(wool):
     return 'True' if wool[0] else 'False'
 
 def string(wool):
-    return hexscii(wool)
+    return asciify(wool)
 
 def setparams(wool):
     report = ''
