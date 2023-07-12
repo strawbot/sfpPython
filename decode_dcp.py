@@ -113,6 +113,7 @@ settings = {
 34: 'C1 Scaled Reading',
 35: 'SE1 Raw Reading',
 36: 'C1 Raw Reading',
+45: 'Operation Mode',
 46: 'Port Protocols',
 50: 'RS-232 Baud Rate',
 55: 'RS-232 Parity',
@@ -182,7 +183,11 @@ settings = {
 
 # add names and return a tuple; can elements be named?
 class dcu_setting:
-    def __init__(self, id, length): self.id = id; self.length = length
+    def __init__(self, id, length):
+        self.id = id; self.length = length
+        if id not in settings:
+            settings[id] = '<unknown>%i'%id
+        self.name = settings[id]
 
 
 OS_Version = dcu_setting(1, 40)
@@ -574,6 +579,7 @@ def get_response(port, t=1):
 CommitExit = 1
 LoadOs = 5
 CancelExit = 2
+RefreshOnly = 4
 
 def control_msg(port, command):
     msg = new_msg(Control)
@@ -610,6 +616,9 @@ Sync: BD
 def commit_exit(port):
     return control_msg(port, CommitExit)
 
+def refresh_only(port):
+    return control_msg(port, RefreshOnly)
+
 ''' BD F2 13 9C 00 00 01 1B 32 BD
 Sync: BD
 Class: F2
@@ -621,12 +630,12 @@ Checksum: 1B32
 Sync: BD
 '''
 
-def get_settings(port, settings):
-    dcp_out(port, get_settings_frame(settings))
+def get_settings(port, choices):
+    dcp_out(port, get_settings_frame(choices))
     class response(bytearray):
         def decode(self):
             self.outcome = self[3]
-            self.devicetype = self[4] * 0x100 + self[6]
+            self.devicetype = self[4] * 0x100 + self[5]
             self.major = self[6]
             self.minor = self[7]
             self.settings = dict()
@@ -634,9 +643,8 @@ def get_settings(port, settings):
             while tupples:
                 id = tupples.pop(0) * 0x100 + tupples.pop(0)
                 length = (0x3F & tupples.pop(0)) * 0x100 + tupples.pop(0)
-                value = tupples[:length]
+                result.settings[settings.get(id, id)] = int.from_bytes(tupples[:length],'big')
                 tupples = tupples[length:]
-                result.settings[id] = value
 
     result = response(get_response(port))
     result.decode()
