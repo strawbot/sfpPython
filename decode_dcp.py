@@ -421,7 +421,7 @@ def decode_dcp(input):
     return ''
 
 def deframe(frame):
-    if frame[0] is SYNC  and  frame[-1] is SYNC:
+    if frame and frame[0] is SYNC  and  frame[-1] is SYNC:
         return frame[1:-1]
     return frame
 
@@ -585,7 +585,8 @@ def control_msg(port, command):
     msg = new_msg(Control)
     msg.append(command)
     msg.add_short(get_signature(msg))
-    return get_response(dcp_out(port, encode(msg)))
+    dcp_out(port, encode(msg))
+    return get_response(port)
 
 def cancel_exit(port):
     return control_msg(port, CancelExit)
