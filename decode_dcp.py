@@ -568,6 +568,24 @@ def dcp_out(port, frame):
         read_frame(port) # remove any previous replies
         port.write(frame)
 
+'''
+    class response(bytearray):
+        def decode(self):
+            self.outcome = self[3]
+            self.devicetype = self[4] * 0x100 + self[5]
+            self.major = self[6]
+            self.minor = self[7]
+            self.settings = dict()
+            tupples = self[9:-2]
+            while tupples:
+                id = tupples.pop(0) * 0x100 + tupples.pop(0)
+                length = (0x3F & tupples.pop(0)) * 0x100 + tupples.pop(0)
+                result.settings[settings.get(id, id)] = int.from_bytes(tupples[:length],'big')
+                tupples = tupples[length:]
+
+    result = response(get_response(port))
+    result.decode()
+'''
 def get_response(port, t=1):
     if port:
         time.sleep(t)
@@ -581,15 +599,26 @@ LoadOs = 5
 CancelExit = 2
 RefreshOnly = 4
 
-def control_msg(port, command):
+BeCalm = 6
+
+class packet(bytearray): # invokes a decoder when initialized
+    def __init__(self, *args, **kwargs):
+        bytearray.__init__(self, *args, **kwargs)
+        self.extras()
+
+def control_msg(port, command, t=.1):
     msg = new_msg(Control)
     msg.append(command)
     msg.add_short(get_signature(msg))
     dcp_out(port, encode(msg))
-    return get_response(port)
+    class response(packet):
+        def extras(self):
+            self.status = self[3] if len(self) > 3 else 0
+    return response(get_response(port, t))
 
 def cancel_exit(port):
     return control_msg(port, CancelExit)
+
 '''DevCo 1645859454.363:
  BD F2 13 91 00 00 02 59 B5 BD
 Sync: BD
@@ -633,8 +662,8 @@ Sync: BD
 
 def get_settings(port, choices):
     dcp_out(port, get_settings_frame(choices))
-    class response(bytearray):
-        def decode(self):
+    class response(packet):
+        def extras(self):
             self.outcome = self[3]
             self.devicetype = self[4] * 0x100 + self[5]
             self.major = self[6]
@@ -646,15 +675,12 @@ def get_settings(port, choices):
                 length = (0x3F & tupples.pop(0)) * 0x100 + tupples.pop(0)
                 result.settings[settings.get(id, id)] = int.from_bytes(tupples[:length],'big')
                 tupples = tupples[length:]
-
-    result = response(get_response(port))
-    result.decode()
-    return result
+    return response(get_response(port))
 
 def set_settings(port, settings):
-    class response(bytearray):
-        def __init__(self, msg):
-            self.extend(msg)
+    class response(packet):
+        def extras(self):
+            self.extend(self)
             self.outcome = self[3]
             self.settings = dict()
             tupples = self[4:-2]
