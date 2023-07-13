@@ -58,6 +58,12 @@ def to_n(msg):
         n = n << 8 | m
     return n
 
+# invokes extras() when built
+class packet(bytearray):
+    def __init__(self, *args, **kwargs):
+        bytearray.__init__(self, *args, **kwargs)
+        self.extras()
+
 # decoded structures
 h = bit_fields([ #(name, span)
         ("Sync", 8),
@@ -600,11 +606,6 @@ CancelExit = 2
 RefreshOnly = 4
 
 BeCalm = 6
-
-class packet(bytearray): # invokes a decoder when initialized
-    def __init__(self, *args, **kwargs):
-        bytearray.__init__(self, *args, **kwargs)
-        self.extras()
 
 def control_msg(port, command, t=.1):
     msg = new_msg(Control)
