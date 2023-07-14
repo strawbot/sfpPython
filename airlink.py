@@ -1,5 +1,15 @@
 import io
-
+'''
+protocols often use consecutive bits, irrespective of byte boundaries,
+called bit fields. This tool allows bit field templates to be used to
+encode/decode byte frames.
+create templates that can be placed over byte arrays to extract field values
+    id = ser.settingid(msg)[1]
+        where ser is a 'bitfields instance' with specific fields and names
+        also an elemental part of a protocol frame
+    the frame is passed in and it is viewed by its bit fields. different
+    bitfields templates can apply to same frame
+'''
 class bit_fields():
     def __init__(self, fields):
         offset = 0
