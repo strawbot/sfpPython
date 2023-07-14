@@ -327,7 +327,6 @@ def ss_msg(msg):
     return out[:-1]
 
 def ssr_msg(msg):
-    print('ssr_msg:', msg.hex(' '))
     out = ' ' + hb(*ghr.outcome(msg)) + '\n'
     del(msg[0])
     while msg:
@@ -444,6 +443,7 @@ class dcp_msg(bytearray):
     def add_tranno(msg):
         msg.append(dcp_msg.tranno)
         dcp_msg.tranno += 1
+        dcp_msg.tranno %= 256
 
     def add_short(msg, value):
         msg.append(0xFF&(value>>8))
