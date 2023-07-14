@@ -92,7 +92,7 @@ def get_response(port, t=2):
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
         if frame[:5] != bytearray(prefix):
-            print("Bad Frame: ", frame.hex())
+            # print("Bad Frame: ", frame.hex())
             return []
         frame, frame_length = xnumba(frame[5:])
         params = []
@@ -115,7 +115,7 @@ def get_tlv_response(port, t=2):
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
         if frame[:5] != b'AL22b':
-            print("Bad Frame: ", frame.hex())
+            # print("Bad Frame: ", frame.hex())
             return []
         frame, frame_length = xnumba(frame[5:])
         params = []
@@ -133,7 +133,8 @@ def get_config_response(port, t=2, report=False):
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
         if frame[:5] != b'AL22b':
-            print("Bad Frame: ", frame.hex())
+            if report:
+                print("Bad Frame: ", frame.hex())
             return []
         frame, frame_length = xnumba(frame[5:])
         if report:
