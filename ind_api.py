@@ -122,7 +122,7 @@ def get_tlv_response(port, t=2):
         frame = frame[:frame_length]
         while frame:
             frame, type = xnumba(frame)
-            tlv_count = frame.pop(0)
+            tlv_count = frame.pop(0) if frame else 0
             for i in range(min(tlv_count,len(frame))):
                params.append(frame.pop(0))
             return params
