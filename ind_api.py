@@ -87,7 +87,7 @@ def send_to_ind(port, port2 = None):
     # print(frame.hex())
     del(frame[:])
 
-def get_response(port, t=2):
+def get_response(port, t=1):
     time.sleep(t)
     if port: # AL22b length parameter tlvs
         frame = read_port(port)
