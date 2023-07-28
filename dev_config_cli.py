@@ -151,6 +151,15 @@ class DeviceConfigCLI:
         self.send_command('restart')
         time.sleep(.5)
 
+    def get_gps_status(self):
+        gps = self.send_command('gps').split('\n')
+        for g in gps:
+            if 'baud:' in g:
+                try:
+                    return g.split('  ')[1]
+                except IndexError:
+                    return ''
+
 
 if __name__ == '__main__':
     dcc = DeviceConfigCLI('COM34')
