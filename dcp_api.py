@@ -602,12 +602,15 @@ def get_response(port, t=1):
             return response
     return bytes()
 
+# commands
 CommitExit = 1
 LoadOs = 5
 CancelExit = 2
 RefreshOnly = 4
 
+# responses
 BeCalm = 6
+SessionEnding = 3
 
 def control_msg(port, command, t=.1):
     msg = new_msg(Control)
@@ -683,9 +686,11 @@ def get_settings(port, choices):
 def set_settings(port, settings):
     class response(packet):
         def extras(self):
-            self.extend(self)
-            self.outcome = self[3]
             self.settings = dict()
+            if len(self) < 4:
+                self.outcome = 0
+                return
+            self.outcome = self[3]
             tupples = self[4:-2]
             while tupples:
                 id = tupples.pop(0) * 0x100 + tupples.pop(0)
