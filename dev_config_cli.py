@@ -160,6 +160,10 @@ class DeviceConfigCLI:
                 except IndexError:
                     return ''
 
+    def get_clock_status(self):
+        status = self.get_whoami()['status']
+        return status[0]
+
 
 if __name__ == '__main__':
     dcc = DeviceConfigCLI('COM34')
