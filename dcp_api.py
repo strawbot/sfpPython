@@ -676,7 +676,7 @@ def get_settings(port, choices):
             while tupples:
                 id = tupples.pop(0) * 0x100 + tupples.pop(0)
                 length = (0x3F & tupples.pop(0)) * 0x100 + tupples.pop(0)
-                result.settings[settings.get(id, id)] = int.from_bytes(tupples[:length],'big')
+                self.settings[settings.get(id, id)] = int.from_bytes(tupples[:length],'big')
                 tupples = tupples[length:]
     return response(get_response(port))
 
