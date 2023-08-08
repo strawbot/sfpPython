@@ -221,7 +221,8 @@ def trimmers(samps):
     medi = pd.Series(rect).rolling(window).median()
     level = np.max(medi)/3
     first = np.argmax(medi>level)
-    last = first + np.argmax(medi[first:]<level)
+    signal_end= np.argmax(medi[first:]<level)
+    last = first + signal_end if signal_end else len(samps) - 1
     return first, last
 
 def trim(samps):
