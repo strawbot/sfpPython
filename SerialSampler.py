@@ -221,15 +221,15 @@ def trimmers(samps):
     medi = pd.Series(rect).rolling(window).median()
     level = np.max(medi)/3
     first = np.argmax(medi>level)
-    signal_end= np.argmax(medi[first:]<level)
-    last = first + signal_end if signal_end else len(samps) - 1
+    signal_end = np.argmax(medi[first:]<level) + 1
+    last = first + signal_end if signal_end else len(samps)
     return first, last
 
 def trim(samps):
     start,end = trimmers(samps)
     waveforms.set_carrier_length(start)
     waveforms.set_rftail_length(len(samps) - end)
-    return samps[start:end+1]
+    return samps[start:end]
 
 def inflect(samps):
     try:
