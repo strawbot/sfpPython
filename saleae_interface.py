@@ -222,6 +222,7 @@ def get_transmission_plus_rx():
             return []
         return tx_data, rx_data
 
+
 def get_radio_warmup_samples(file):
     with open(file, 'r') as csvfile:
         csvreader = csv.DictReader(csvfile, fieldnames=['Time', 'TX', 'PTT', 'SW-12 V'])
