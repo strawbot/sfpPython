@@ -1,6 +1,6 @@
 import io, traceback, sys, time, serial
 import binascii, struct
-from protocols.airlink import bit_fields
+from Pylibs.protocols.airlink import bit_fields
 
 # if __name__ == "__main__":
 #     from airlink import bit_fields
