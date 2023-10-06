@@ -222,7 +222,7 @@ def trimmers(samps):
     level = np.max(medi)/3
     first = np.argmax(medi>level)
     signal_end = np.argmax(medi[first:]<level) + 1
-    last = first + signal_end if signal_end else len(samps)
+    last = first + signal_end if signal_end > 10000 else len(samps)
     return first, last
 
 def trim(samps):

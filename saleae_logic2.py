@@ -142,7 +142,7 @@ def capture_absolute_tx(al2_cli, after_trigger_seconds=1):
             with manager.start_capture(device_configuration=Configurations.tx_absolute_device_config,
                                        capture_configuration=config.tx_absolute_capture_config
                                        ) as capture:
-                al2_cli.send_command('sendtest')
+                # al2_cli.send_command('sendtest')
                 capture.wait()
 
                 # capture.save_capture(directory)
