@@ -21,6 +21,12 @@ class DeviceConfigCLI:
     def __open_port(self):
         return serial.Serial(self.port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
 
+    def is_open(self):
+        if self.__port.isOpen():
+            return True
+        else:
+            return False
+
     def init_cli(self):
         # Checks if port is open
         if self.__port:
@@ -151,14 +157,18 @@ class DeviceConfigCLI:
         self.send_command('restart')
         time.sleep(.5)
 
-    def get_gps_status(self):
-        gps = self.send_command('gps').split('\n')
-        for g in gps:
-            if 'baud:' in g:
-                try:
-                    return g.split('  ')[1]
-                except IndexError:
-                    return ''
+    def get_gps_status(self, full=False):
+        gps = self.send_command('gps')
+        if full:
+            return gps[5:]
+        else:
+            gps = gps.split('\n')
+            for g in gps:
+                if 'baud:' in g:
+                    try:
+                        return g.split('  ')[1]
+                    except IndexError:
+                        return ''
 
     def get_clock_status(self):
         status = self.get_whoami()['status']
