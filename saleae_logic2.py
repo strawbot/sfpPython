@@ -213,7 +213,7 @@ def capture_sine_wave(al2_cli):
         try:
             config = Configurations()
             config.timed_waveform_capture_config.capture_mode.duration_seconds = 1.5
-            al2_cli.send_command('sine')
+            al2_cli.send_command('poweraudio sine')
             with manager.start_capture(device_configuration=config.sine_wave_device_config,
                                        capture_configuration=config.timed_waveform_capture_config
                                        ) as capture:
