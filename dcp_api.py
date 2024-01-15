@@ -265,6 +265,7 @@ TBR_Accumulator = dcu_setting(358, 2)
 SDI12_Sensor_Monitor = dcu_setting(361, 2)
 ALERT2_to_SDI12_Sensors_Mapping = dcu_setting(362, 8)
 Health = dcu_setting(314, 1)
+Include_Temperature = dcu_setting(316, 1)
 
 # message decoding
 RESP = 0x80
