@@ -154,8 +154,8 @@ class DeviceConfigCLI:
         return sdi_12
 
     def restart_device(self):
-        self.send_command('restart')
-        time.sleep(.5)
+        self.write_port('restart')
+        time.sleep(3)
 
     def get_gps_status(self, full=False):
         gps = self.send_command('gps')
