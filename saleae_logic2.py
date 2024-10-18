@@ -116,7 +116,7 @@ def capture_tx(al2_cli, after_trigger_seconds=1):
             with manager.start_capture(device_configuration=Configurations.tx_device_config,
                                        capture_configuration=config.tx_capture_config
                                        ) as capture:
-                al2_cli.send_command('sendtest')
+                al2_cli.send_command('testreport')
                 capture.wait()
 
                 # capture.save_capture(directory)
@@ -192,7 +192,7 @@ def capture_radio_warmup(al2_cli):
             with manager.start_capture(device_configuration=config.radio_warmup_device_config,
                                        capture_configuration=config.radio_warmup_capture_config
                                        ) as capture:
-                al2_cli.send_command('sendtest')
+                al2_cli.send_command('testreport')
                 capture.wait()
 
                 delete_export_file()
