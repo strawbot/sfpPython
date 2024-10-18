@@ -16,7 +16,7 @@ else:
     # from .saleae_interface import *
     from .saleae_logic2 import analog_rate, get_capture_data
 
-from numpy.lib.function_base import average, median
+from numpy import average, median
 from scipy import signal
 from numpy.fft import fft as fft
 import numpy as np
