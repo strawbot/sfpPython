@@ -436,6 +436,13 @@ def decode_dcp(input):
             return out
     return ''
 
+sync = b'\xbd'
+
+def print_dcp(dcp):
+    for c in dcp.split(sync):
+        if c:
+            print(decode_dcp(sync+c+sync))
+
 def deframe(frame):
     if frame and frame[0] is SYNC  and  frame[-1] is SYNC:
         return frame[1:-1]
@@ -736,20 +743,32 @@ if __name__ == "__main__":
     al200e = bytearray(b'\xBD\xF2\x0F\xA5\x00\x00\x01\x64\x01\x68\xC5\xFC\xBD')
     al200f = bytearray(b'\xBD\xF2\x90\x83\x01\x00\x2F\x02\x01\x00\x00\xC3\x00\x02\x00\x3C\xF2\x58\xBD')
     al200g = bytearray.fromhex('BD F2 90 C3 01 00 D7 01 21 DF BD'.strip())
-    print(decode_dcp(devco))
-    print(decode_dcp(al200))
-    print(decode_dcp(al200a))
-    print(decode_dcp(al200b))
-    print(decode_dcp(al200b))
-    print(decode_dcp(al200b))
-    print(decode_dcp(al200b))
-    print(decode_dcp(al200c))
-    print(decode_dcp(al200d))
-    print(decode_dcp(al200e))
-    print(decode_dcp(al200g))
+    # print(decode_dcp(devco))
+    # print(decode_dcp(al200))
+    # print(decode_dcp(al200a))
+    # print(decode_dcp(al200b))
+    # print(decode_dcp(al200b))
+    # print(decode_dcp(al200b))
+    # print(decode_dcp(al200b))
+    # print(decode_dcp(al200c))
+    # print(decode_dcp(al200d))
+    # print(decode_dcp(al200e))
+    # print(decode_dcp(al200g))
+    # print(decode_dcp(bytearray.fromhex('BD F2 8F 39 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 35 20 31 30 3A 33 32 3A 34 30 00 33 F3 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 0F 3A 00 00 00 A4 00 A5 9D 76 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 8F 3A 01 00 6A 07 00 00 00 A5 00 01 00 00 A4 00 04 41 8B 5A 97 84 76 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 0F 3B 00 00 00 A7 00 A8 DA BA BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 8F 3B 01 00 6A 07 00 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 7D 57 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 0F 3C 00 00 00 B9 00 BA 43 A4 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 8F 3C 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 35 20 31 30 3A 33 32 3A 34 30 00 6A E6 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 10 3D 00 00 00 32 00 01 07 E8 94 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 90 3D 01 00 32 03 1B 63 BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 13 3E 00 00 01 C9 9D BD'.strip())))
+    # print(decode_dcp(bytearray.fromhex('BD F2 93 3E 01 00 01 D9 24 BD'.strip())))
+    dcp = bytearray.fromhex('BD F2 13 00 00 00 04 CE 84 BD BD F2 93 00 06 00 04 9E F0 BD BD F2 0F 81 00 00 E8 6E BD BD F2 8F 81 01 00 6A 07 00 00 00 01 40 18 41 4C 32 30 30 58 2E 41 4C 45 52 54 32 2E 37 2E 42 65 74 61 2D 32 37 00 00 2D 00 01 04 00 2F 00 01 00 00 32 00 01 07 00 3C 00 01 01 00 3D 00 01 00 00 5F 00 02 03 E8 00 64 00 02 00 01 00 69 00 01 01 00 6E 00 01 00 00 82 00 01 01 00 98 00 04 00 00 00 00 00 9B 00 04 00 00 3A 98 00 9C 00 01 00 00 9D 00 01 01 00 9E 00 01 00 00 A0 00 02 03 E8 00 A2 00 02 00 19 00 A5 00 01 00 00 A9 40 1C 0A 4E 6F 20 61 63 74 69 76 65 20 6F 72 20 70 65 6E 64 69 6E 67 20 6B 65 79 73 2E 00 00 A6 00 01 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 00 AE 00 01 00 00 A4 00 04 41 8E 10 49 00 AC 00 01 00 00 AA 00 02 00 1E 00 AF 00 02 00 05 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 00 BB 00 01 12 00 BE 00 02 00 05 00 C3 00 02 00 37 00 C8 00 02 00 05 00 CD 00 01 00 00 D2 00 02 01 90 00 DC 00 04 00 00 02 EE 00 D7 00 01 00 C4 18 BD BD F2 0F 82 00 00 00 A4 00 A5 D9 82 BD BD F2 8F 82 01 00 6A 07 00 00 00 A5 00 01 00 00 A4 00 04 41 8E 10 49 B3 9E BD BD F2 0F 83 00 00 00 A7 00 A8 17 C7 BD BD F2 8F 83 01 00 6A 07 00 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 45 69 BD BD F2 0F 84 00 00 00 B9 00 BA 81 B1 BD BD F2 8F 84 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 A1 21 BD BD F2 0F 85 00 00 00 A4 00 A5 0F 86 BD BD F2 8F 85 01 00 6A 07 00 00 00 A5 00 01 00 00 A4 00 04 41 8E 10 4A E1 74 BD BD F2 0F 86 00 00 00 A7 00 A8 4F CC BD BD F2 8F 86 01 00 6A 07 00 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 4D E3 BD BD F2 0F 87 00 00 00 B9 00 BA BE B8 BD BD F2 8F 87 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 9F C6 BD BD F2 13 88 00 00 05 55 1D BD BD F2 93 88 03 00 05 4A 98 BD'.strip())
+    print_dcp(dcp)
 
-
-if __name__ == "__main__":
+if __name__ == "xx__main__":
     dcp = serial.Serial('COM34', baudrate=57600, timeout=0.3)
     pdu = b'\x12\x34\x56\x78\xBD\xBC'
     frame = dcp_msg()
