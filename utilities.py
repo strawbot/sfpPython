@@ -15,3 +15,12 @@ def asciify(s):
 
 def hexify(s):
     return ''.join(map(lambda x: ' ' + toHex(x)[1:3], s))
+
+def hexString(s):
+    return ''.join(map(lambda x: hex(ord(x))[2:], s))
+
+def hexscii(s):
+    if type(s) is type('s'):
+        return bytearray.fromhex(s).decode('utf-8', 'replace')
+    return s
+
