@@ -1,6 +1,7 @@
 import io, traceback, sys, time, serial
 import binascii, struct
-from protocols.airlink import bit_fields
+from airlink import bit_fields
+from decode_peri import decode_settings
 
 # if __name__ == "__main__":
 #     from airlink import bit_fields
@@ -90,6 +91,13 @@ ser = bit_fields([ # settings - setting read only
     ("valuelength", 14),
 ])
 
+sf = bit_fields([ # settings - setting
+    ("settingid", 16),
+    ("fragmentoffset", 32),
+    ("morefragments", 1),
+    ("fragmentlen", 15),
+])
+
 so = bit_fields([ # setting outcome
     ("settingid", 16),
     ("settingoutcome", 8),
@@ -101,6 +109,18 @@ gs = bit_fields([ # get settings command
     ("beginsettingid", 15),
     ("reserved", 1),
     ("endsettingid", 15),
+])
+
+gf = bit_fields([ # get settings command
+    ("securitycode", 16),
+    ("settingid", 16),
+    ("offset", 32),
+])
+
+gfr = bit_fields([
+    ("outcome", 8),
+    ("morefragments", 1),
+    ("fragmentlen", 15),
 ])
 
 ghr = bit_fields([ # get settings response header
@@ -188,9 +208,11 @@ settings = {
 350: 'SDI-12 Tx Change',
 355: 'C1 Mode',
 356: 'C1 Status',
-357: 'P1 Transmitted',
+357: 'Load Peripherals',
 358: 'TBR Accumulator',
-361: 'SDI12 Sensor Monitor',
+359: 'DCU Peripheral Enable',
+360: 'DCU Peripheral Definitions',
+361: 'Peripheral Activity',
 362: 'SDI-12 Sensors Mappin',
 }
 
@@ -281,8 +303,12 @@ Control = 0x13
 Response = Control + RESP
 GetSettings = 0x0F
 SetSettings = 0x10
+GetFragment = 0x11
+SetFragment = 0x12
 GetSettingsResponse = GetSettings + RESP
 SetSettingsResponse = SetSettings + RESP
+GetFragmentResponse = GetFragment + RESP
+SetFragmentResponse = SetFragment + RESP
 
 def id_name(msg):
     id = ser.settingid(msg)[1]
@@ -302,6 +328,8 @@ def gs_msg(msg):
         out += ' ' + hb(*gs.endsettingid(msg)) + '\n'
     return out[:-1]
 
+newsettings = bytearray()
+
 def gsr_msg(msg):
     out = ' ' + hb(*ghr.outcome(msg)) + '\n'
     if len(msg) > 1:
@@ -320,7 +348,27 @@ def gsr_msg(msg):
             del (msg[:4])
             decimal = ' (%i)\n'%to_n(msg[:length]) if length < 20 else '\n'
             out += '    value:' + hexify(msg[:length]) + decimal
+            if id == 360:
+                newsettings[:] = msg[:length]
             del (msg[:length])
+    return out[:-1]
+
+def gf_msg(msg):
+    out = ' ' + hx4(*gf.securitycode(msg)) + '\n'
+    out += ' ' + hb(*gf.settingid(msg)) + '\n'
+    out += ' ' + hb(*gf.offset(msg)) + '\n'
+    return out[:-1]
+
+def gfr_msg(msg):
+    out = ' ' + hb(*gfr.outcome(msg)) + '\n'
+    out += '   ' + hb(*gfr.morefragments(msg)) + '\n'
+    out += '   ' + hb(*gfr.fragmentlen(msg)) + '\n'
+    length = ser.valuelength(msg)[1]
+    del (msg[:3])
+    decimal = ' (%i)\n'%to_n(msg[:length]) if length < 20 else '\n'
+    out += '    value:' + hexify(msg[:length]) + decimal
+    out += decode_settings(newsettings + msg[:length]) + '\n'
+    del (msg[:length])
     return out[:-1]
 
 def ss_msg(msg):
@@ -332,19 +380,46 @@ def ss_msg(msg):
         out += '   ' + hb(*se.largevalue(msg)) + '\n'
         out += '   ' + hb(*se.settinglen(msg)) + '\n'
         length = se.settinglen(msg)[1]
+        lv = se.largevalue(msg)
         del(msg[:4])
         out += '    value:' + hexify(msg[:length]) + '\n'
+        if lv:
+            newsettings[:] = msg[:length]
+        else:
+            out += decode_settings(msg[:length]) + '\n'
         del (msg[:length])
     return out[:-1]
 
 def ssr_msg(msg):
     out = ' ' + hb(*ghr.outcome(msg)) + '\n'
     del(msg[0])
-    while msg:
-        id, name = id_name(msg)
-        out += '  ' + hx(*so.settingid(msg)) + '(%i) %s\n' % (id, name)
-        out += '   ' + hx(*so.settingoutcome(msg)) + '\n'
-        del(msg[:3])
+    # while msg:
+    #     id, name = id_name(msg)
+    #     out += '  ' + hx(*so.settingid(msg)) + '(%i) %s\n' % (id, name)
+    #     out += '   ' + hx(*so.settingoutcome(msg)) + '\n'
+    #     del(msg[:3])
+    return out[:-1]
+
+def sf_msg(msg):
+    out = ' ' + hx4(*gs.securitycode(msg)) + '\n'
+    del(msg[:2])
+    id, name = id_name(msg)
+    out += '  ' + hx(*so.settingid(msg)) + '(%i) %s\n' % (id, name)
+    del(msg[:2])
+    out += '   ' + hb(*sf.fragmentoffset(msg)) + '\n'
+    out += '   ' + hb(*sf.morefragments(msg)) + '\n'
+    out += '   ' + hb(*sf.fragmentlen(msg)) + '\n'
+    del(msg[:4])
+    length = sf.fragmentlen(msg)[1]
+    del(msg[:2])
+    out += '    value:' + hexify(msg[:length]) + '\n'
+    out += decode_settings(newsettings + msg[:length]) + '\n'
+    del (msg[:length])
+    return out[:-1]
+
+def sfr_msg(msg):
+    out = ' ' + hb(*ghr.outcome(msg)) + '\n'
+    del(msg[0])
     return out[:-1]
 
 def decode_msg(typ, msg):
@@ -362,6 +437,14 @@ def decode_msg(typ, msg):
         return ss_msg(msg)
     if typ == SetSettingsResponse:
         return ssr_msg(msg)
+    if typ == SetFragment:
+        return sf_msg(msg)
+    if typ == SetFragmentResponse:
+        return sfr_msg(msg)
+    if typ == GetFragment:
+        return gf_msg(msg)
+    if typ == GetFragmentResponse:
+        return gfr_msg(msg)
     return 'Msg:%s'%hexify(msg)
 
 SYNC = 0xBD
@@ -372,6 +455,7 @@ START_SIG = 0xAAAA
 def decode_frame(frame):
     f = io.StringIO()
     try:
+        print("Frame length: %i"%len(frame), end="")
         print(hx(*h.Sync(frame)), file=f)
         print(hx(*h.Class(frame)), file=f)
         print(typify(*h.Type(frame)), file=f)
@@ -381,7 +465,7 @@ def decode_frame(frame):
         msg, tail = t.betail(rest)
 
         print(decode_msg(h.Type(frame)[1], msg), file=f)
-        print(hx(*t.Checksum(tail)), file=f)
+        print(hx(*t.Checksum(tail)), get_signature(frame[1:-1]), file=f)
         print(hx(*t.Sync(tail)), file=f)
     except Exception as e:
         print(e)
@@ -436,13 +520,6 @@ def decode_dcp(input):
             return out
     return ''
 
-sync = b'\xbd'
-
-def print_dcp(dcp):
-    for c in dcp.split(sync):
-        if c:
-            print(decode_dcp(sync+c+sync))
-
 def deframe(frame):
     if frame and frame[0] is SYNC  and  frame[-1] is SYNC:
         return frame[1:-1]
@@ -454,6 +531,11 @@ DCP_CLASS = 0xF2
 def encode(frame):
     encoded = sum([[x] if x not in [SYNC, QUOTED] else [QUOTED, x + MASKER]  for x in frame], start=[])
     return bytes([SYNC] + encoded + [SYNC])
+
+def print_dcp(dcp):
+    for c in dcp.split(bytes.fromhex(hex(SYNC)[2:])):
+        if c:
+            print(decode_dcp(encode(c)))
 
 class dcp_msg(bytearray):
     tranno = 0x8E
@@ -765,8 +847,12 @@ if __name__ == "__main__":
     # print(decode_dcp(bytearray.fromhex('BD F2 90 3D 01 00 32 03 1B 63 BD'.strip())))
     # print(decode_dcp(bytearray.fromhex('BD F2 13 3E 00 00 01 C9 9D BD'.strip())))
     # print(decode_dcp(bytearray.fromhex('BD F2 93 3E 01 00 01 D9 24 BD'.strip())))
-    dcp = bytearray.fromhex('BD F2 13 00 00 00 04 CE 84 BD BD F2 93 00 06 00 04 9E F0 BD BD F2 0F 81 00 00 E8 6E BD BD F2 8F 81 01 00 6A 07 00 00 00 01 40 18 41 4C 32 30 30 58 2E 41 4C 45 52 54 32 2E 37 2E 42 65 74 61 2D 32 37 00 00 2D 00 01 04 00 2F 00 01 00 00 32 00 01 07 00 3C 00 01 01 00 3D 00 01 00 00 5F 00 02 03 E8 00 64 00 02 00 01 00 69 00 01 01 00 6E 00 01 00 00 82 00 01 01 00 98 00 04 00 00 00 00 00 9B 00 04 00 00 3A 98 00 9C 00 01 00 00 9D 00 01 01 00 9E 00 01 00 00 A0 00 02 03 E8 00 A2 00 02 00 19 00 A5 00 01 00 00 A9 40 1C 0A 4E 6F 20 61 63 74 69 76 65 20 6F 72 20 70 65 6E 64 69 6E 67 20 6B 65 79 73 2E 00 00 A6 00 01 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 00 AE 00 01 00 00 A4 00 04 41 8E 10 49 00 AC 00 01 00 00 AA 00 02 00 1E 00 AF 00 02 00 05 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 00 BB 00 01 12 00 BE 00 02 00 05 00 C3 00 02 00 37 00 C8 00 02 00 05 00 CD 00 01 00 00 D2 00 02 01 90 00 DC 00 04 00 00 02 EE 00 D7 00 01 00 C4 18 BD BD F2 0F 82 00 00 00 A4 00 A5 D9 82 BD BD F2 8F 82 01 00 6A 07 00 00 00 A5 00 01 00 00 A4 00 04 41 8E 10 49 B3 9E BD BD F2 0F 83 00 00 00 A7 00 A8 17 C7 BD BD F2 8F 83 01 00 6A 07 00 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 45 69 BD BD F2 0F 84 00 00 00 B9 00 BA 81 B1 BD BD F2 8F 84 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 A1 21 BD BD F2 0F 85 00 00 00 A4 00 A5 0F 86 BD BD F2 8F 85 01 00 6A 07 00 00 00 A5 00 01 00 00 A4 00 04 41 8E 10 4A E1 74 BD BD F2 0F 86 00 00 00 A7 00 A8 4F CC BD BD F2 8F 86 01 00 6A 07 00 00 00 A7 40 04 00 00 00 00 00 A8 00 04 00 00 00 00 4D E3 BD BD F2 0F 87 00 00 00 B9 00 BA BE B8 BD BD F2 8F 87 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 30 37 20 31 32 3A 30 38 3A 33 37 00 9F C6 BD BD F2 13 88 00 00 05 55 1D BD BD F2 93 88 03 00 05 4A 98 BD'.strip())
+    m = 'BD F2 13 00 00 00 04 CE 84 BD BD F2 93 00 06 00 04 9E F0 BD BD F2 0F 81 00 00 E8 6E BD BD F2 8F 81 01 00 6A 07 00 01 00 01 40 18 41 4C 32 30 30 58 2E 41 4C 45 52 54 32 2E 37 2E 42 65 74 61 2D 32 38 00 00 2D 00 01 04 00 2E 40 24 49 4E 44 20 6F 6E 20 63 6F 6D 31 2C 20 44 43 50 20 6F 6E 20 75 73 62 2C 20 43 4C 49 20 6F 6E 20 75 73 62 00 00 2F 00 01 00 00 32 00 01 07 00 3C 00 01 01 00 3D 00 01 00 00 5F 00 02 03 E8 00 64 00 02 00 01 00 69 00 01 01 00 6E 00 01 00 00 82 00 01 01 00 98 00 02 00 00 00 9B 00 02 3A 98 00 9C 00 01 00 00 9D 00 01 01 00 9E 00 01 00 00 A0 00 02 03 E8 00 A2 00 02 00 19 00 A4 00 02 C2 2B 00 A5 00 01 00 00 A6 00 01 00 00 A7 40 02 00 00 00 A8 00 02 00 00 00 A9 40 1C 0A 4E 6F 20 61 63 74 69 76 65 20 6F 72 20 70 65 6E 64 69 6E 67 20 6B 65 79 73 2E 00 00 AA 00 02 00 1E 00 AC 00 01 00 00 AE 00 01 00 00 AF 00 02 00 05 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 31 39 20 30 39 3A 35 30 3A 32 38 00 00 BB 00 01 12 00 BE 00 02 00 05 00 C3 00 02 00 37 00 C8 00 02 00 05 00 CD 00 01 00 00 D2 00 02 01 90 00 D7 00 01 00 00 DC 00 02 02 EE 01 65 00 01 00 01 67 00 01 00 D5 3A BD BD F2 0F 82 00 00 81 67 C9 B7 BD BD F2 8F 82 01 00 6A 07 00 01 01 68 83 AE 56 57 43 5F 30 35 63 6D 00 0B 01 30 4D 31 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 31 30 63 6D 00 0C 01 30 4D 32 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 32 30 63 6D 00 0D 01 30 4D 33 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 33 30 63 6D 00 0E 01 30 4D 34 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 34 30 63 6D 00 0F 01 30 4D 35 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 35 30 63 6D 00 10 01 30 4D 36 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 30 35 63 6D 00 15 01 30 4D 31 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 31 30 63 6D 00 16 01 30 4D 32 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 32 30 63 6D 00 17 01 30 4D 33 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 33 30 63 6D 00 18 01 30 4D 34 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 34 30 63 6D 00 19 01 30 4D 35 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 35 30 63 6D 00 1A 01 30 4D 36 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 30 35 63 6D 00 1F 01 30 4D 31 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 31 30 63 6D 00 20 01 30 4D 32 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 32 30 63 6D 00 21 01 30 4D 33 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 33 30 63 6D 00 22 01 30 4D 34 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 34 30 63 6D 00 23 01 30 4D 35 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 35 30 63 6D 00 24 01 30 4D 36 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 30 35 63 6D 00 29 01 30 4D 31 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 31 30 63 6D 00 2A 01 30 4D 32 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 32 30 63 6D 00 2B 01 30 4D 33 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 4D 50 BD BD F2 0F 83 00 00 81 68 81 99 BD BD F2 8F 83 01 00 6A 07 00 00 01 69 40 00 D8 E8 BD BD F2 11 84 00 00 01 68 00 00 03 AE 8A A8 BD BD F2 91 84 01 01 92 45 43 5F 32 30 63 6D 00 2B 01 30 4D 33 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 33 30 63 6D 00 2C 01 30 4D 34 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 34 30 63 6D 00 2D 01 30 4D 35 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 35 30 63 6D 00 2E 01 30 4D 36 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 74 65 6D 70 00 08 07 74 65 6D 70 65 72 61 74 75 72 65 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 63 6C 6F 63 6B 00 84 07 63 6C 6F 63 6B 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 73 74 61 74 75 73 00 CA 07 73 74 61 74 75 73 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 72 61 69 6E 00 00 06 63 6C 6F 73 65 73 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 CF EC BD BD F2 0F 85 00 00 00 B9 00 BA EA 09 BD BD F2 8F 85 01 00 6A 07 00 00 00 B9 40 15 20 32 30 32 34 2D 31 31 2D 31 39 20 30 39 3A 35 30 3A 32 38 00 F0 96 BD BD F2 0F 86 00 00 01 69 01 6A 8E 31 BD BD F2 8F 86 01 00 6A 07 00 00 01 69 40 00 55 02 BD BD F2 13 87 00 00 04 74 2A BD BD F2 93 87 06 00 04 45 96 BD BD F2 10 88 00 00 01 68 83 D4 62 6C 61 68 62 6C 61 68 00 0B 01 30 4D 31 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 31 30 63 6D 00 0C 01 30 4D 32 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 32 30 63 6D 00 0D 01 30 4D 33 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 33 30 63 6D 00 0E 01 30 4D 34 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 34 30 63 6D 00 0F 01 30 4D 35 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 56 57 43 5F 35 30 63 6D 00 10 01 30 4D 36 21 00 01 FF 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 30 35 63 6D 00 15 01 30 4D 31 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 31 30 63 6D 00 16 01 30 4D 32 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 32 30 63 6D 00 17 01 30 4D 33 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 33 30 63 6D 00 18 01 30 4D 34 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 34 30 63 6D 00 19 01 30 4D 35 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 50 65 72 6D 5F 35 30 63 6D 00 1A 01 30 4D 36 21 00 01 FF 02 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 30 35 63 6D 00 1F 01 30 4D 31 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 31 30 63 6D 00 20 01 30 4D 32 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 32 30 63 6D 00 21 01 30 4D 33 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 33 30 63 6D 00 22 01 30 4D 34 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 34 30 63 6D 00 23 01 30 4D 35 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 54 43 5F 35 30 63 6D 00 24 01 30 4D 36 21 00 01 FF 03 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 30 35 63 6D 00 29 01 30 4D 31 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 31 30 63 6D 00 2A 01 30 4D 32 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 32 30 63 6D 00 2B 01 30 4D 33 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 32 30 63 6D 00 2B 01 30 4D 33 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 12 9D BD BD F2 90 88 01 01 68 69 94 BD BD F2 12 89 00 00 01 68 00 00 03 D4 01 6C 00 53 63 61 6E 00 45 43 5F 33 30 63 6D 00 2C 01 30 4D 34 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 34 30 63 6D 00 2D 01 30 4D 35 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 45 43 5F 35 30 63 6D 00 2E 01 30 4D 36 21 00 01 FF 04 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 74 65 6D 70 00 08 07 74 65 6D 70 65 72 61 74 75 72 65 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 63 6C 6F 63 6B 00 84 07 63 6C 6F 63 6B 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 73 74 61 74 75 73 00 CA 07 73 74 61 74 75 73 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 72 61 69 6E 00 00 06 63 6C 6F 73 65 73 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 B9 74 BD BD F2 92 89 01 25 6F BD BD F2 13 8A 00 00 01 23 09 BD BD F2 93 8A 01 00 01 30 8E BD'
+    dcp = bytearray.fromhex(m.strip())
     print_dcp(dcp)
+    # dcp = bytearray.fromhex('BD F2 90 8E 01 01 68 01 BE B9 BD BD F2 12 8F 00 00 01 68 00 00 03 D4 00 6D 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 70 32 00 00 01 6C 65 76 65 6C 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 B5 CF BD BD F2 12 8F 00 00 01 68 00 00 03 D4 00 6D 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 70 32 00 00 01 6C 65 76 65 6C 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 B5 CF BD BD F2 12 8F 00 00 01 68 00 00 03 D4 00 6D 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 70 32 00 00 01 6C 65 76 65 6C 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 B5 CF BD BD F2 12 8F 00 00 01 68 00 00 03 D4 00 6D 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 62 61 74 74 65 72 79 00 83 07 62 61 74 74 65 72 79 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 70 32 00 00 01 6C 65 76 65 6C 00 00 00 01 3F 80 00 00 00 00 00 00 53 6C 6F 74 00 53 63 61 6E 00 00 00 00 53 63 61 6E 00 B5 CF BD'.strip())
+    # print_dcp(dcp)
+
 
 if __name__ == "xx__main__":
     dcp = serial.Serial('COM34', baudrate=57600, timeout=0.3)

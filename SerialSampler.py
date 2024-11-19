@@ -234,7 +234,7 @@ def trim(samps):
 def inflect(samps):
     try:
         trip,sign0,i = abs(samps[0]/2), sign(samps[0]), 1
-
+        # look for sign switch or positive down slope or negative up slope
         while sign(samps[i]) == sign0  or  abs(samps[i]) < trip:
             i += 1
 
