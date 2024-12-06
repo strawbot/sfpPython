@@ -12,9 +12,9 @@ from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples,
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
 directory = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures'
 digital_timed_rate = 20000000
-digital_trigger_rate = 10000000
-digital_absolute_rate = 5000000
-analog_rate = 625000
+digital_trigger_rate = 6250000
+digital_absolute_rate = 6250000
+analog_rate = 781250
 
 
 class Configurations:
