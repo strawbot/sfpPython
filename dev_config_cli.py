@@ -19,7 +19,7 @@ class DeviceConfigCLI:
         self.init_cli()  # will initialize port when the class is instantiated
 
     def __open_port(self):
-        return serial.Serial(self.port_num, 57600, timeout=0.5, stopbits=1, parity='N', bytesize=8)
+        return serial.Serial(self.port_num, 57600, timeout=0.1, stopbits=1, parity='N', bytesize=8)
 
     def is_open(self):
         if self.__port.isOpen():
@@ -46,7 +46,7 @@ class DeviceConfigCLI:
     def write_port(self, cmd):
         self.__port.write(cmd_to_bytes(cmd))
 
-    def read_port(self, timeout=1):
+    def read_port(self, timeout=.1):
         # Reads the response from the serial port with a settable timeout
         end = time.time() + timeout
         collected = b''
@@ -57,7 +57,7 @@ class DeviceConfigCLI:
                 end = time.time() + timeout
         return collected
 
-    def get_response(self, timeout=0.5):
+    def get_response(self, timeout=0.1):
         # Same as read_port but adds a layer for decoding and error handling
         end = time.time() + timeout
         collected = ''
