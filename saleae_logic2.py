@@ -11,6 +11,7 @@ from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples,
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
 directory = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures'
+save_file = directory + '/capture.sal'
 digital_timed_rate = 20000000
 digital_trigger_rate = 6250000
 digital_absolute_rate = 6250000
@@ -116,15 +117,15 @@ def capture_tx(al2_cli, after_trigger_seconds=1):
             with manager.start_capture(device_configuration=Configurations.tx_device_config,
                                        capture_configuration=config.tx_capture_config
                                        ) as capture:
-                al2_cli.send_command('testreport')
+                al2_cli.send_command('testmant')
                 capture.wait()
-
-                # capture.save_capture(directory)
 
                 delete_export_file()
 
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=Configurations.tx_device_config.enabled_analog_channels)
+
+                capture.save_capture(save_file)
             return True
         except automation.CaptureError:
             print("Saleae capture error")

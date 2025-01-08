@@ -103,7 +103,7 @@ class DeviceConfigCLI:
         self.write_port(' \r')
         try:
             resp = self.get_response()
-            if 'al200:' in resp:
+            if 'al200x:' in resp:
                 return True
         except IndexError as e:
             pass
