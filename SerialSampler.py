@@ -171,7 +171,7 @@ def resamp(samps):
     if f1 == 0.0:
         raise ValueError
     print('f prime:',f1)
-    waveforms.set_fprime(f1 * 2)
+    waveforms.set_fprime(f1)
 
     # FFT for plot
     N = len(samps)

@@ -62,7 +62,7 @@ class DeviceConfigCLI:
         end = time.time() + timeout
         collected = ''
         while time.time() < end:
-            resp = self.read_port()
+            resp = self.read_port(timeout)
             if resp:
                 end = time.time() + timeout
                 try:
@@ -75,7 +75,7 @@ class DeviceConfigCLI:
         if not self.is_alive():
             self.init_cli()
         self.write_port('whoami')
-        return self.parse_whoami(self.get_response(1.0))
+        return self.parse_whoami(self.get_response(.5))
 
     @staticmethod
     def parse_whoami(whosit):

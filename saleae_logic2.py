@@ -12,7 +12,7 @@ from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples,
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
 directory = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures'
 save_file = directory + '/capture.sal'
-digital_timed_rate = 20000000
+digital_timed_rate = 6250000
 digital_trigger_rate = 6250000
 digital_absolute_rate = 6250000
 analog_rate = 781250
@@ -109,7 +109,7 @@ def delete_export_file():
         os.remove(filename)
 
 
-def capture_tx(al2_cli, after_trigger_seconds=1):
+def capture_tx(al2_cli, test_message=True, after_trigger_seconds=1):
     with automation.Manager.connect(port=10430) as manager:
         try:
             config = Configurations()
@@ -117,7 +117,8 @@ def capture_tx(al2_cli, after_trigger_seconds=1):
             with manager.start_capture(device_configuration=Configurations.tx_device_config,
                                        capture_configuration=config.tx_capture_config
                                        ) as capture:
-                al2_cli.send_command('testmant')
+                if test_message:
+                    al2_cli.send_command('testmant')
                 capture.wait()
 
                 delete_export_file()
@@ -146,12 +147,12 @@ def capture_absolute_tx(al2_cli, after_trigger_seconds=1):
                 # al2_cli.send_command('sendtest')
                 capture.wait()
 
-                # capture.save_capture(directory)
-
                 delete_export_file()
 
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=Configurations.tx_absolute_device_config.enabled_analog_channels)
+
+                capture.save_capture(save_file)
                 print("Capture done")
             return True
         except automation.CaptureError:
@@ -166,7 +167,7 @@ def capture_square_wave(al2_cli):
     with automation.Manager.connect(port=10430) as manager:
         try:
             config = Configurations()
-            al2_cli.send_command('square')
+            al2_cli.send_command('sine makesquare')
             with manager.start_capture(device_configuration=config.sine_wave_device_config,
                                        capture_configuration=config.timed_waveform_capture_config
                                        ) as capture:
@@ -175,7 +176,7 @@ def capture_square_wave(al2_cli):
                 delete_export_file()
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=config.tx_device_config.enabled_analog_channels)
-                al2_cli.send_command('waveoff')
+                al2_cli.send_command('poweroff')
 
             return True
         except automation.CaptureError:
@@ -200,6 +201,7 @@ def capture_radio_warmup(al2_cli):
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=config.radio_warmup_device_config.enabled_analog_channels)
 
+                capture.save_capture(save_file)
             return True
         except automation.CaptureError:
             print("Saleae capture error")
@@ -214,7 +216,7 @@ def capture_sine_wave(al2_cli):
         try:
             config = Configurations()
             config.timed_waveform_capture_config.capture_mode.duration_seconds = 1.5
-            al2_cli.send_command('poweraudio sine')
+            al2_cli.send_command('sine')
             with manager.start_capture(device_configuration=config.sine_wave_device_config,
                                        capture_configuration=config.timed_waveform_capture_config
                                        ) as capture:
@@ -223,6 +225,8 @@ def capture_sine_wave(al2_cli):
                 delete_export_file()
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=config.sine_wave_device_config.enabled_analog_channels)
+                capture.save_capture(save_file)
+            al2_cli.send_command('poweroff')
             return True
         except automation.CaptureError:
             print("Saleae capture error")
