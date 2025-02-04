@@ -34,6 +34,8 @@ class DeviceConfigCLI:
                 self.__port = self.__open_port()
         else:
             self.__port = self.__open_port()
+
+    def terminal_mode(self):
         # Send dev config commands to put unit into terminal mode
         self.__port.write(bytearray(CONTROL_COMMAND))
         resp = self.__port.readlines()
@@ -46,12 +48,22 @@ class DeviceConfigCLI:
     def write_port(self, cmd):
         self.__port.write(cmd_to_bytes(cmd))
 
-    def read_port(self, timeout=.1):
+    def safe_read(self):
+        try:
+            return self.__port.read(self.__port.in_waiting)
+        except: # port death due to restart
+            print("Restarting Serial port...")
+            time.sleep(3) # give it time to restart
+            self.__init__(self.port_num) # try now to reopen
+            return self.__port.read(self.__port.in_waiting)
+
+
+    def read_port(self, timeout=1):
         # Reads the response from the serial port with a settable timeout
         end = time.time() + timeout
         collected = b''
         while time.time() < end:
-            resp = self.__port.read(self.__port.in_waiting)
+            resp = self.safe_read()
             if resp:
                 collected += resp
                 end = time.time() + timeout
