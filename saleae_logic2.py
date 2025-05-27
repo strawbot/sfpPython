@@ -30,7 +30,7 @@ class Configurations:
         digital_sample_rate=digital_trigger_rate,
         glitch_filters=[automation.GlitchFilterEntry(
             channel_index=1,
-            pulse_width_seconds=0.00001
+            pulse_width_seconds=0.00002
         )]
     )
 
@@ -61,7 +61,7 @@ class Configurations:
         digital_sample_rate=digital_trigger_rate,
         glitch_filters=[automation.GlitchFilterEntry(
             channel_index=1,
-            pulse_width_seconds=0.00001
+            pulse_width_seconds=0.00002
         )]
     )
 
@@ -89,7 +89,7 @@ class Configurations:
         digital_sample_rate=digital_absolute_rate,
         glitch_filters=[automation.GlitchFilterEntry(
             channel_index=1,
-            pulse_width_seconds=0.00001
+            pulse_width_seconds=0.00002
         )]
     )
 
@@ -177,6 +177,32 @@ def capture_square_wave(al2_cli):
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=config.tx_device_config.enabled_analog_channels)
                 al2_cli.send_command('poweroff')
+                capture.save_capture(save_file)
+
+            return True
+        except automation.CaptureError:
+            print("Saleae capture error")
+            return False
+        except automation.ExportError:
+            print("Saleae export error")
+            return False
+
+
+def capture_randomair(al2_cli):
+    with automation.Manager.connect(port=10430) as manager:
+        try:
+            config = Configurations()
+            al2_cli.send_command('randomair')
+            time.sleep(1.0)
+            with manager.start_capture(device_configuration=config.sine_wave_device_config,
+                                       capture_configuration=config.timed_waveform_capture_config
+                                       ) as capture:
+                capture.wait()
+
+                delete_export_file()
+                capture.export_raw_data_csv(directory=directory,
+                                            analog_channels=config.tx_device_config.enabled_analog_channels)
+                al2_cli.send_command('poweroff')
 
             return True
         except automation.CaptureError:
@@ -217,6 +243,7 @@ def capture_sine_wave(al2_cli):
             config = Configurations()
             config.timed_waveform_capture_config.capture_mode.duration_seconds = 1.5
             al2_cli.send_command('sine')
+            time.sleep(1.0)
             with manager.start_capture(device_configuration=config.sine_wave_device_config,
                                        capture_configuration=config.timed_waveform_capture_config
                                        ) as capture:
