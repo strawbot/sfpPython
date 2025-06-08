@@ -83,24 +83,25 @@ def decode_mant_header(mp):# mp = bytearray([0x07, 0x06, 0x00, 0x10, 0x0D, 0x10]
         print(*mh.length(mp), file=f) # 3862
 
         print(*mh.source_address(mp), file=f) # 45502
-        mpx = mh.behead(mp)
+        # mpx = mh.behead(mp)[1]
 
-        if (mh.inc_da(mp)):
-            print("Dest addr:", Short(mpx), file=f)
-            mpx = mpx[2:]
+        # if (mh.inc_da(mp)):
+        #     print("Dest addr:", Short(mpx), file=f)
+        #     mpx = mpx[2:]
 
-        if (mh.protocol_id(mp)):
-            print("PDU ID:", mpx[0], file=f)
-            mpx = mpx[1:]
+        # if (mh.protocol_id(mp)):
+        #     print("PDU ID:", mpx[0], file=f)
+        #     mpx = mpx[1:]
 
-        if (mh.add_path_service(mp)):
-            n = mpx[0]
-            mpx = mpx[1:]
-            print("Source Addresses:(%d)"%n, file=f)
-            while n:
-                print(Short(mpx), file=f)
-                mpx = mpx[2:]
-    except:
+        # if (mh.add_path_service(mp)):
+        #     n = mpx[0]
+        #     mpx = mpx[1:]
+        #     print("Source Addresses:(%d)"%n, file=f)
+        #     while n:
+        #         print(Short(mpx), file=f)
+        #         mpx = mpx[2:]
+    except Exception as e:
+        print (e)
         print("Decode error", file=f)
 
     a = f.getvalue()
