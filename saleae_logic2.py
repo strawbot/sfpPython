@@ -262,6 +262,27 @@ def capture_sine_wave(al2_cli):
             print("Saleae export error")
             return False
 
+def capture_timed_report(duration, downsample=1):
+    with automation.Manager.connect(port=10430) as manager:
+        try:
+            config = Configurations
+            config.tx_capture_config.capture_mode.after_trigger_seconds = duration
+            with manager.start_capture(device_configuration=config.tx_device_config,
+                                       capture_configuration=config.tx_capture_config) as capture:
+                capture.wait()
+                delete_export_file()
+                capture.export_raw_data_csv(directory=directory,
+                                            analog_channels=config.tx_device_config.enabled_analog_channels,
+                                            analog_downsample_ratio=downsample)
+                capture.save_capture(save_file)
+            return True
+        except automation.CaptureError:
+            print("Saleae capture error")
+            return False
+        except automation.ExportError:
+            print("Saleae export error")
+            return False
+
 
 def get_absolute_timings():
     timings = {}
