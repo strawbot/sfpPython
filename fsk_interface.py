@@ -70,7 +70,7 @@ def get_waveform():
                     else:
                         state = PTTLO
                 if state == PTTLO:
-                    if float(row['TX']) > 1.25 or float(row['TX']) < 1.2:
+                    if float(row['TX']) > 1.28 or float(row['TX']) < 1.17:
                         state = WAVEFORM
                 if state == WAVEFORM:
                     rf_window.append(float(row['TX']))
@@ -109,7 +109,7 @@ def find_rftail_time():
                     else:
                         state = PTTLO
                 if state == PTTLO:
-                    if float(row['TX']) > 1.25 or float(row['TX']) < 1.2:
+                    if float(row['TX']) > 1.28 or float(row['TX']) < 1.17:
                         state = WAVEFORM
                 if state == WAVEFORM:
                     time.append(float(row['Time']))
@@ -117,7 +117,7 @@ def find_rftail_time():
                     if len(window) < 100:
                         continue
                     else:
-                        if max(window) < 1.25 and min(window) > 1.2:
+                        if max(window) < 1.3 and min(window) > 1.15:
                             state = TAIL
                             start = time[-100]
                             continue
