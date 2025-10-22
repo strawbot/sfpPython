@@ -155,10 +155,20 @@ def get_full_tx():
             pass
         return 0
 
+# import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
 
 def get_intervals(times, samples):
     samples = remove_dc(samples)
     # print(*times[:10],'\n',*samples[:10])
+
+    x, y = times, samples
+    yhat = savgol_filter(y, 51, 3)  # window size 51, polynomial order 3
+    # plt.plot(x, y)
+    # plt.plot(x, yhat, color='red')
+    # plt.show()
+    samples = yhat
+
     transitions = zero_crossings(times, samples)
     transitions.insert(0, times[0])  # add first time to get first interval
     # print(*transitions[:10])
