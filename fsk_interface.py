@@ -8,11 +8,18 @@ csv_file = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/a
 
 
 def remove_dc(samples):
-    sum = 0
-    for sample in samples:
-        sum += sample
-    average = sum / len(samples)
-    for i in range(len(samples)):
+    # find min, max; get average; subtract from all: (min + range/2)
+    ## mean
+    # sum = 0
+    # for sample in samples:
+    #     sum += sample
+    # average = sum / len(samples)
+    ## mean of median of maxs and median of mins
+    # s = sorted(samples)
+    # average = (median(s[-100:]) + median(s[:100]))/2
+    ## geometric mean
+    average = (min(samples) + max(samples))/2
+    for i in range(len(samples)): # shift all by average
         samples[i] -= average
     return samples
 
@@ -155,22 +162,34 @@ def get_full_tx():
             pass
         return 0
 
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 def get_intervals(times, samples):
     samples = remove_dc(samples)
+    samples = savgol_filter(samples, 11, 2)  # window size 51, polynomial order 3
+
     # print(*times[:10],'\n',*samples[:10])
 
-    x, y = times, samples
-    yhat = savgol_filter(y, 51, 3)  # window size 51, polynomial order 3
-    # plt.plot(x, y)
-    # plt.plot(x, yhat, color='red')
+    # n = len(times)//100
+    # x, y = times[:n], samples[:n]
+    # plt.plot(x, y, label='Raw')
+    # for window in range(11, 12):
+    #     for poly in range(2,3):
+    #         yhat = savgol_filter(y, window, poly)  # window size 51, polynomial order 3
+    #         plt.plot(x, yhat, label='w={} p={}'.format(window, poly))
     # plt.show()
-    samples = yhat
+    # samples = yhat
 
+
+    if samples[1] == 0 or samples[0] * samples[1] < 0:
+        m = (samples[1] - samples[0]) / (times[1] - times[0])
+        first = times[0] - samples[0] / m
+    else:
+        first = times[0]
+    # first = 0
     transitions = zero_crossings(times, samples)
-    transitions.insert(0, times[0])  # add first time to get first interval
+    # transitions.insert(0, times[0])  # add first time to get first interval
     # print(*transitions[:10])
     deltas = get_deltas(transitions)
     deltas = remove_dc(deltas)
@@ -181,6 +200,12 @@ def get_intervals(times, samples):
     intervals = get_deltas(frequencies)
     if intervals[0] < .001:  # remove any short interval
         del (intervals[0])
+    # plt.plot(times[:len(transitions)], transitions, label='transitions')
+    # plt.plot(times[:len(deltas)], deltas, label='deltas')
+    # plt.plot(times[:len(frequencies)], frequencies, label='frequencies')
+    # plt.plot(times[:len(intervals)], intervals, label='intervals')
+    # plt.legend()
+    # plt.show()
     return intervals
 
 
