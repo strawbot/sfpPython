@@ -9,8 +9,9 @@ import csv
 import numpy
 
 # csv_file = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
-csv_file = '/Users/RobertChapman/Projects/AL200_Platforms/AL200_OSX/Scripts/alert1_data/good.csv'
-csv_file2 = '/Users/RobertChapman/Projects/AL200_Platforms/AL200_OSX/Scripts/alert1_data/bad2ndblock.csv'
+csv_file = 'alert1_data/good.csv'
+csv_file1 = 'alert1_data/bad1stblock.csv'
+csv_file2 = 'alert1_data/bad2ndblock.csv'
 # good.csv
 # bad1stblock.csv
 # bad2ndblock.csv
@@ -198,6 +199,27 @@ def airlink_frame(results):
         i += 1
     results.airframe = results.pskbits[i:]
 
+def frame_payload(r):
+    r.bits = []
+    bit = 1
+    for seq in r.airframe:
+        r.bits.extend([bit]*seq)
+        bit ^= 1
+    # print("bits:", r.bits)
+    r.bytes = []
+    for i in range(0,len(r.bits),8):
+        if i + 7 > len(r.bits):
+            break
+        r.bytes.append(r.bits[i]<<7 |
+                       r.bits[i+1]<<6 |
+                       r.bits[i+2]<<5 |
+                       r.bits[i+3]<<4 |
+                       r.bits[i+4]<<3 |
+                       r.bits[i+5]<<2 |
+                       r.bits[i+6]<<1 |
+                       r.bits[i+7]<<0 )
+    # print("bytes:", list(map(hex, r.bytes))[:10])
+
 def get_intervals(times, raw):
     class Results(object):
         pass
@@ -246,6 +268,7 @@ def get_intervals(times, raw):
         del (r.intervals[0])
     psk_decode(r)
     airlink_frame(r)
+    frame_payload(r)
 
     # plt.plot(r.times[:1000], raw[:1000], label='raw')
     # plt.legend()
@@ -320,15 +343,25 @@ if __name__ == "__main__":
     # inter_packet_spacing = get_inter_packet_spacing()
     results = get_intervals(times, samples)
     # print("PSK bit pattern: ", results.pskbits)
-    msg = find_message(results.intervals)
+    # msg = find_message(results.intervals)
 
+    print("bad 1st block")
+    csv_file = csv_file1
+    times1, samples1 = get_waveform()
+    results1 = get_intervals(times1, samples1)
+    difs = [a-b for a,b in zip(results.airframe, results1.airframe)]
+    print("bit slips at: ", [i for i in range(len(difs)) if difs[i]], "out of", len(difs))
+
+    print("bad 2nd block")
     csv_file = csv_file2
     times2, samples2 = get_waveform()
     results2 = get_intervals(times2, samples2)
-    msg2 = find_message(results.intervals)
-    print("Deltas: ", [a-b for a,b in zip(results.airframe, results2.airframe)])
-    print("MSG1: ", *msg)
-    print("MSG2: ", *msg2)
+    difs = [a - b for a, b in zip(results.airframe, results2.airframe)]
+    print("bit slips at: ", [i for i in range(len(difs)) if difs[i]], "out of", len(difs))
+
+    # print("Deltas: ", difs)
+    # print("MSG1: ", *msg)
+    # print("MSG2: ", *msg2)
 
     #
     # carrier = find_carrier_time()
