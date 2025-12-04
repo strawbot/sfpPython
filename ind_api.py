@@ -84,7 +84,7 @@ def send_to_ind(port, port2 = None):
         if port:
             read_port(port) # remove any previous replies
             port.write(frame)
-    # print(frame.hex())
+    # print(frame.hex(':'))
     del(frame[:])
 
 def get_response(port, t=1):

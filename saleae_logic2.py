@@ -11,10 +11,10 @@ from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples,
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
 directory = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures'
-digital_timed_rate = 20000000
-digital_trigger_rate = 10000000
-digital_absolute_rate = 5000000
-analog_rate = 625000
+digital_timed_rate = 6250000
+digital_trigger_rate = 6250000
+digital_absolute_rate = 6250000
+analog_rate = 781250
 
 
 class Configurations:
@@ -100,6 +100,28 @@ class Configurations:
             after_trigger_seconds=1
         ),
         buffer_size_megabytes=100
+    )
+
+    # Capture config for listen and save function
+    listen_device_config = automation.LogicDeviceConfiguration(
+        enabled_analog_channels=[0, 1],
+        enabled_digital_channels=[0, 1, 2],
+        analog_sample_rate=analog_rate,
+        digital_sample_rate=digital_trigger_rate,
+        glitch_filters=[automation.GlitchFilterEntry(
+            channel_index=1,
+            pulse_width_seconds=0.00002
+        )]
+    )
+
+    # Capture config for basic transmission and PDU capture
+    listen_capture_config = automation.CaptureConfiguration(
+        capture_mode=automation.DigitalTriggerCaptureMode(
+            trigger_type=automation.DigitalTriggerType.FALLING,
+            trigger_channel_index=1,
+            after_trigger_seconds=1
+        ),
+        buffer_size_megabytes=600
     )
 
 
@@ -222,6 +244,25 @@ def capture_sine_wave(al2_cli):
                 delete_export_file()
                 capture.export_raw_data_csv(directory=directory,
                                             analog_channels=config.sine_wave_device_config.enabled_analog_channels)
+            return True
+        except automation.CaptureError:
+            print("Saleae capture error")
+            return False
+        except automation.ExportError:
+            print("Saleae export error")
+            return False
+
+
+def listen_and_save_capture(save_file):
+    with automation.Manager.connect(port=10430) as manager:
+        try:
+            config = Configurations()
+            config.listen_capture_config.capture_mode.after_trigger_seconds = 2
+            with manager.start_capture(device_configuration=config.listen_device_config,
+                                       capture_configuration=config.listen_capture_config
+                                       ) as capture:
+                capture.wait()
+                capture.save_capture(save_file)
             return True
         except automation.CaptureError:
             print("Saleae capture error")
