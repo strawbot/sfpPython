@@ -30,7 +30,7 @@ class Configurations:
         digital_sample_rate=digital_trigger_rate,
         glitch_filters=[automation.GlitchFilterEntry(
             channel_index=1,
-            pulse_width_seconds=0.00002
+            pulse_width_seconds=0.00004
         )]
     )
 
@@ -97,7 +97,7 @@ class Configurations:
     tx_absolute_capture_config = automation.CaptureConfiguration(
         capture_mode=automation.DigitalTriggerCaptureMode(
             trigger_type=automation.DigitalTriggerType.RISING,
-            trigger_channel_index=3,
+            trigger_channel_index=2,
             after_trigger_seconds=1
         ),
         buffer_size_megabytes=100

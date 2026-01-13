@@ -2,6 +2,8 @@ import io, traceback, sys, time, serial
 import binascii, struct
 from Pylibs.protocols.airlink import bit_fields
 from Pylibs.protocols.decode_peri import decode_settings
+from Pylibs.protocols.al200x_dcp import *
+from Pylibs.protocols.al200_dcp import *
 
 # if __name__ == "__main__":
 #     from airlink import bit_fields
@@ -132,7 +134,7 @@ ghr = bit_fields([ # get settings response header
 ])
 
 # make a choice on which settings to use: AL200 or AL200X
-from al200x_dcp import *
+from Pylibs.protocols.al200x_dcp import *
 # from al200_dcp import *
 
 # message decoding
