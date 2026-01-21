@@ -7,9 +7,12 @@ from numpy.ma.extras import average
 from Pylibs.protocols.saleae_interface import is_number, get_transmission
 import csv
 import numpy
+import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
+
 
 # csv_file = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
-csv_file = 'alert1_data/good.csv'
+csv_file = 'alert1_data/glitch_data.csv'
 csv_file1 = 'alert1_data/bad1stblock.csv'
 csv_file2 = 'alert1_data/bad2ndblock.csv'
 # good.csv
@@ -69,14 +72,14 @@ def find_carrier_time():
         return 0
 
 
-def get_waveform():
+def get_waveform(csvfile=csv_file):
     data = array('f')
     time = array('f')
-    with open(csv_file, 'r') as f:
+    with open(csvfile, 'r') as f:
         csvreader = csv.DictReader(f, fieldnames=['Time', 'TX', 'PTT'])
         OFF, PTTLO, WAVEFORM = range(3)
         state = OFF
-        rf_window = array("f")
+        # rf_window = array("f")
         try:
             for row in csvreader:
                 if state == OFF:
@@ -85,18 +88,21 @@ def get_waveform():
                     if float(row['Time']) < 0:
                         continue
                     else:
-                        state = PTTLO
+                        state = WAVEFORM
                 if state == PTTLO:
                     if float(row['TX']) > 1.28 or float(row['TX']) < 1.17:
                         state = WAVEFORM
                 if state == WAVEFORM:
-                    rf_window.append(float(row['TX']))
-                    if len(rf_window) > 100:
+                    if row['PTT'] != None:
+                        if float(row['PTT']) > 3:
+                            break
+                    # rf_window.append(float(row['TX']))
+                    # if len(rf_window) > 100:
                         # if max(rf_window) < 1.25 or min(rf_window) > 1.2:
                         #     del (time[-100:])
                         #     del (data[-100:])
                         #     break
-                        rf_window.pop(0)
+                        # rf_window.pop(0)
                     time.append(float(row['Time']))
                     data.append(float(row['TX']))
             print(f"Waveform length (ms): {round(1000*(time[-1] - time[0]),1)}")
@@ -169,9 +175,6 @@ def get_full_tx():
         except ValueError:
             pass
         return 0
-
-import matplotlib.pyplot as plt
-from scipy.signal import savgol_filter
 
 def separate_message(samples): # separate carrier, message and tail
     threshold = max(samples)/8
