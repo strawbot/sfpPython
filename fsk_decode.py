@@ -133,7 +133,7 @@ def iflows(bytes):
     data = bytes[3][6:8] + bytes[2][0:8] + bytes[1][0:1]
     return (address, data)
 
-def print_messages(message):
+def get_messages(message):
 
         # for i in range(len(message)):
         #     p = i % 10
@@ -145,7 +145,7 @@ def print_messages(message):
 
         # 40 bits[0,1,2...] map to 4 bytes stripping start and end bits
         # bit order is reverse of received bits
-        def print_message(bytes):
+        def get_message(bytes):
             print("#bits:", len(message))
             print(*message)
             for byte in bytes:
@@ -169,7 +169,7 @@ def print_messages(message):
 
         while len(message) >= 40:
             bytes = [message[8:0:-1], message[18:10:-1], message[28:20:-1], message[38:30:-1]]
-            print_message(bytes)
+            get_message(bytes)
             del(message[:40])
             im = 0
             while message:
@@ -189,12 +189,12 @@ if __name__ == '__main__':
     # print_message(find_message(times, samples)) # check the csv message
     # plt.plot(times, samples, marker='*')
     # plt.show()
-    times, samples = get_waveform(csvfile)
-    # times, samples = get_waveform(glitch)
+    # times, samples = get_waveform(csvfile)
+    times, samples = get_waveform(glitch)
     r = get_intervals(times, samples)
     # plt.plot(r.times, r.samples, marker='*')
     # plt.show()
-    print_messages(find_messages(r.times, r.samples))
+    get_messages(find_messages(r.times, r.samples))
 
 '''
 Improvements:

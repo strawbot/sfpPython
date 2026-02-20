@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 
 
-# csv_file = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
-csv_file = 'alert1_data/glitch_data.csv'
+csv_file = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'
+# csv_file = 'alert1_data/glitch_data.csv'
 csv_file1 = 'alert1_data/bad1stblock.csv'
 csv_file2 = 'alert1_data/bad2ndblock.csv'
 # good.csv
@@ -342,8 +342,8 @@ if __name__ == "__main__":
     # full_tx = get_full_tx()
     # print(f"Full TX standard dev: {numpy.std(full_tx)}")
     times, samples = get_waveform()
-    # preamble = get_preamble()
-    # inter_packet_spacing = get_inter_packet_spacing()
+    preamble = get_preamble()
+    inter_packet_spacing = get_inter_packet_spacing()
     results = get_intervals(times, samples)
     # print("PSK bit pattern: ", results.pskbits)
     # msg = find_message(results.intervals)
