@@ -15,7 +15,9 @@ save_file = directory + '/capture.sal'
 digital_timed_rate = 6250000
 digital_trigger_rate = 6250000
 digital_absolute_rate = 6250000
+digital_listen_rate = 10000000
 analog_rate = 781250
+analog_listen_rate = 31250
 
 
 class Configurations:
@@ -107,8 +109,8 @@ class Configurations:
     listen_device_config = automation.LogicDeviceConfiguration(
         enabled_analog_channels=[0, 1],
         enabled_digital_channels=[0, 1, 2],
-        analog_sample_rate=analog_rate,
-        digital_sample_rate=digital_trigger_rate,
+        analog_sample_rate=analog_listen_rate,
+        digital_sample_rate=digital_listen_rate,
         glitch_filters=[automation.GlitchFilterEntry(
             channel_index=1,
             pulse_width_seconds=0.00002
@@ -305,7 +307,7 @@ def capture_timed_report(duration, downsample=1):
             return False
 
 
-def listen_and_save_capture(save_file):
+def listen_and_save_capture(save_path):
     with automation.Manager.connect(port=10430) as manager:
         try:
             config = Configurations()
@@ -314,7 +316,8 @@ def listen_and_save_capture(save_file):
                                        capture_configuration=config.listen_capture_config
                                        ) as capture:
                 capture.wait()
-                capture.save_capture(save_file)
+                saved_file = save_path + '/capture.sal'
+                capture.save_capture(saved_file)
             return True
         except automation.CaptureError:
             print("Saleae capture error")
