@@ -103,6 +103,27 @@ class Configurations:
         buffer_size_megabytes=100
     )
 
+    # Capture config for listen and save function
+    listen_device_config = automation.LogicDeviceConfiguration(
+        enabled_analog_channels=[0, 1],
+        enabled_digital_channels=[0, 1, 2],
+        analog_sample_rate=analog_rate,
+        digital_sample_rate=digital_trigger_rate,
+        glitch_filters=[automation.GlitchFilterEntry(
+            channel_index=1,
+            pulse_width_seconds=0.00002
+        )]
+    )
+
+    # Capture config for basic transmission and PDU capture
+    listen_capture_config = automation.CaptureConfiguration(
+        capture_mode=automation.DigitalTriggerCaptureMode(
+            trigger_type=automation.DigitalTriggerType.FALLING,
+            trigger_channel_index=1,
+            after_trigger_seconds=1
+        ),
+        buffer_size_megabytes=600
+    )
 
 def delete_export_file():
     if path.exists(filename):
@@ -283,6 +304,24 @@ def capture_timed_report(duration, downsample=1):
             print("Saleae export error")
             return False
 
+
+def listen_and_save_capture(save_file):
+    with automation.Manager.connect(port=10430) as manager:
+        try:
+            config = Configurations()
+            config.listen_capture_config.capture_mode.after_trigger_seconds = 2
+            with manager.start_capture(device_configuration=config.listen_device_config,
+                                       capture_configuration=config.listen_capture_config
+                                       ) as capture:
+                capture.wait()
+                capture.save_capture(save_file)
+            return True
+        except automation.CaptureError:
+            print("Saleae capture error")
+            return False
+        except automation.ExportError:
+            print("Saleae export error")
+            return False
 
 def get_absolute_timings():
     timings = {}
