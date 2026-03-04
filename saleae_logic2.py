@@ -15,9 +15,9 @@ save_file = directory + '/capture.sal'
 digital_timed_rate = 6250000
 digital_trigger_rate = 6250000
 digital_absolute_rate = 6250000
-digital_listen_rate = 10000000
+digital_listen_rate = 6250000
 analog_rate = 781250
-analog_listen_rate = 31250
+analog_listen_rate = 781250
 
 
 class Configurations:
