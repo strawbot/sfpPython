@@ -522,7 +522,7 @@ def process_metrics():
 
 
 if __name__ == '__main__':
-    # from Alert2Encoder.Alert2Encoder.Unit_tests.pylibs.sfpPort import SfpPort
+    # from Alert2Encoder.Alert2Encoder.Unit_tests.sfpPort import SfpPort
     # stream = open_stream('COM7')
 
     # process_metrics()

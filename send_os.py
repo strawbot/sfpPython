@@ -1,8 +1,8 @@
 import os, sys
 import time
 import serial
-# from Pylibs.sfpPort import SfpPort
-# from Pylibs.protocols.interface.serialHub import SerialPort
+# from sfpPort import SfpPort
+# from protocols.interface.serialHub import SerialPort
 
 FW_FILE = '../Alert2Encoder/Alert2Encoder/Debug/Alert2Encoder_os.hex'
 

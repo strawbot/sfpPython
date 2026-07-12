@@ -1,5 +1,5 @@
 from saleae import Saleae, PerformanceOption, Trigger
-from Pylibs.protocols.dev_config_cli import DeviceConfigCLI
+from protocols.dev_config_cli import DeviceConfigCLI
 import os
 import time
 import csv

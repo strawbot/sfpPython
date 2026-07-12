@@ -3,10 +3,10 @@ import os
 import os.path as path
 import time
 import csv
-from Pylibs.protocols.dev_config_cli import DeviceConfigCLI
-from Pylibs.protocols.saleae_interface import get_transmission, get_raw_samples, get_radio_warmup_samples, \
+from protocols.dev_config_cli import DeviceConfigCLI
+from protocols.saleae_interface import get_transmission, get_raw_samples, get_radio_warmup_samples, \
     get_sine_samples, is_number
-# from Pylibs.protocols.SerialSampler import removeDC, trim, resamp, filt, comb, clean, sync, to_bytes
+# from protocols.SerialSampler import removeDC, trim, resamp, filt, comb, clean, sync, to_bytes
 
 
 filename = 'C:\\Projects\\CampbellScientific\\Testing\\AL200_TestFarm/Captures/analog.csv'

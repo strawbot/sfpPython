@@ -4,7 +4,7 @@ from numpy.ma.extras import average
 
 # from PyQt6.QtWidgets.QWidget import sizeHint
 
-from Pylibs.protocols.saleae_interface import is_number, get_transmission
+from protocols.saleae_interface import is_number, get_transmission
 import csv
 import numpy
 import matplotlib.pyplot as plt

@@ -1,5 +1,5 @@
-from Pylibs.protocols.ind_types import *
-from Pylibs.protocols.alert2_decode import *
+from protocols.ind_types import *
+from protocols.alert2_decode import *
 
 import time
 
