@@ -38,10 +38,15 @@ class SerialPort(Port):
                 # Emit before closePort(), which disconnects this port's
                 # signals as part of cleanup — mirrors send_data()'s pattern
                 # so the GUI's existing ioException handling (reconnect) runs.
+                # A dropped/unplugged device is an expected, recoverable
+                # condition here, not a bug, so skip the full traceback dump.
                 self.ioException.emit("run - serial port exception: %s" % e)
-                self.closePort()
-                traceback.print_exc(file=sys.stderr)
-        print('serial thread for {} is done'.format(self.name))
+                # ioException's listener (PortTab._ioError) already closes
+                # the port as part of handling the drop; only close here
+                # ourselves if nothing did, to avoid Port.close() printing
+                # its "is not open" complaint about a redundant second call.
+                if self.is_open():
+                    self.closePort()
 
     def open(self, rate=None, thread=True, timeout=.01):
         if self.is_open():
@@ -61,7 +66,11 @@ class SerialPort(Port):
                                           rtscts=0,  # hw flow control
                                           bytesize=self.bytesize)
                 Port.open(self)
-                note('opened %s at %d' % (self.name, self.rate))
+                # Not routed through note() here: this class has no notion of
+                # which GUI tab owns it, so a global note() would land on
+                # whichever tab currently has focus rather than this port's
+                # own tab. The GUI reports open/reconnect itself (see
+                # PortTab.selectPort/_onReconnectResult).
                 if sys.platform == 'win32':
                     if self.port._GetCommModemStatus() != 0:
                         self.port.close()
@@ -74,9 +83,12 @@ class SerialPort(Port):
             except Exception as e:
                 if self.port:
                     self.port.close()
-                print(e, file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
-                raise ConnectionError('open port failed for ' + self.name)
+                # Device not present (e.g. a reconnect attempt while it's
+                # still unplugged) is expected and recoverable here — the
+                # caller already surfaces it (PortTab shows "[port open
+                # failed: ...]", or the reconnect timer just retries), so
+                # skip the stderr dump to avoid spamming it every retry.
+                raise ConnectionError('open port failed for %s: %s' % (self.name, e))
 
     def closePort(self):
         Port.close(self)
@@ -91,7 +103,8 @@ class SerialPort(Port):
                 self.port.close()
             except:
                 pass
-            note('closed %s' % self.name)
+            # See open(): no tab affiliation here, so no note() call — the
+            # GUI reports the disconnect itself (see PortTab._ioError).
         self.port = None
 
     def close(self):
