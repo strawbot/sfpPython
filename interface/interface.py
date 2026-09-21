@@ -127,8 +127,8 @@ class Port(Interface):
         self.name = name
         self.hub = hub
         self.__opened = False
-        self.ioError = Signal()
-        self.ioException = Signal()
+        self.ioError = Signal(object)      # emits a message string
+        self.ioException = Signal(object)  # emits a message string
         self.closed = Signal()
         self.opened = Signal()
         self.signals += [self.ioError, self.ioException, self.closed, self.opened]

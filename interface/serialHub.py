@@ -35,8 +35,11 @@ class SerialPort(Port):
                 if len(c):
                     self.output.emit(c)
             except Exception as e:
+                # Emit before closePort(), which disconnects this port's
+                # signals as part of cleanup — mirrors send_data()'s pattern
+                # so the GUI's existing ioException handling (reconnect) runs.
+                self.ioException.emit("run - serial port exception: %s" % e)
                 self.closePort()
-                error("run - serial port exception: %s" % e)
                 traceback.print_exc(file=sys.stderr)
         print('serial thread for {} is done'.format(self.name))
 
@@ -146,8 +149,8 @@ class SerialHub(Hub):
         self.wait(100)
 
     def run(self):
-        try:
-            while self.running:
+        while self.running:
+            try:
                 ports = listports.listports()
                 portlist = [port.name for port in self.ports()]
                 for r in list(set(portlist) - set(ports)):  # items to be removed
@@ -155,10 +158,10 @@ class SerialHub(Hub):
                 for a in list(set(ports) - set(portlist)):  # items to be added
                     port = SerialPort(a, self)
                     self.add_port(port)
-                self.wait(self.update_interval)
-        except Exception as e:
-            print(e, file=sys.stderr)
-            traceback.print_exc(file=sys.stderr)
+            except Exception as e:
+                print(e, file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+            self.wait(self.update_interval)
 
     def exit(self):
         self.running = False
