@@ -28,25 +28,47 @@ class SerialPort(Port):
                 c += self.port.read(self.port.in_waiting)
             return c
 
-        getc() # flush port after opening and before thread begins
+        def portFailed(e):
+            # Emit before closePort(), which disconnects this port's
+            # signals as part of cleanup — mirrors send_data()'s pattern
+            # so the GUI's existing ioException handling (reconnect) runs.
+            # A dropped/unplugged device is an expected, recoverable
+            # condition here, not a bug, so skip the full traceback dump.
+            self.ioException.emit("run - serial port exception: %s" % e)
+            # ioException's listener (PortTab._ioError) already closes
+            # the port as part of handling the drop; only close here
+            # ourselves if nothing did, to avoid Port.close() printing
+            # its "is not open" complaint about a redundant second call.
+            if self.is_open():
+                self.closePort()
+
+        try:
+            getc() # flush port after opening and before thread begins
+        except Exception as e:
+            # A device that hangs up on its very first read (still
+            # re-enumerating after a reboot/DFU) used to kill this thread
+            # silently while the port still reported open: the GUI showed
+            # "Reconnected" but nothing was reading, so it looked dead.
+            portFailed(e)
+            return
+
         while self.is_open():
             try:
                 c = getc()
-                if len(c):
-                    self.output.emit(c)
             except Exception as e:
-                # Emit before closePort(), which disconnects this port's
-                # signals as part of cleanup — mirrors send_data()'s pattern
-                # so the GUI's existing ioException handling (reconnect) runs.
-                # A dropped/unplugged device is an expected, recoverable
-                # condition here, not a bug, so skip the full traceback dump.
-                self.ioException.emit("run - serial port exception: %s" % e)
-                # ioException's listener (PortTab._ioError) already closes
-                # the port as part of handling the drop; only close here
-                # ourselves if nothing did, to avoid Port.close() printing
-                # its "is not open" complaint about a redundant second call.
-                if self.is_open():
-                    self.closePort()
+                portFailed(e)
+            else:
+                if len(c):
+                    try:
+                        self.output.emit(c)
+                    except Exception:
+                        # A bug in whatever consumes the data (decoder,
+                        # display, ...) says nothing about the port's health.
+                        # Treating it as a port failure closed a working
+                        # connection, and auto-reconnect then reopened it into
+                        # the same bad data: an endless drop/reconnect loop.
+                        # Keep the port up and make the real bug visible.
+                        traceback.print_exc(file=sys.stderr)
 
     def open(self, rate=None, thread=True, timeout=.01):
         if self.is_open():
@@ -98,10 +120,16 @@ class SerialPort(Port):
             sig.disconnect()
 
         if self.isOpen():
+            # flush() raises on a vanished device; it must not skip close(),
+            # or the dead fd stays open and can collide with the re-created
+            # device node on reconnect.
             try:
                 self.port.flush()
+            except Exception:
+                pass
+            try:
                 self.port.close()
-            except:
+            except Exception:
                 pass
             # See open(): no tab affiliation here, so no note() call — the
             # GUI reports the disconnect itself (see PortTab._ioError).
