@@ -5,9 +5,65 @@ from . import listports
 import traceback
 import serial
 from .message import warning, error, note, message
-from threading import Thread
+from threading import Thread, Lock
+import os
+import subprocess
 import sys
 from time import sleep
+
+if sys.platform == 'darwin':
+    try:    # a jammed USB serial device must not freeze the whole process
+        from . import nogil_termios
+        nogil_termios.install()
+    except Exception:
+        pass
+
+
+def stuckHolders(path, settle=0.3, timeout=3.0):
+    """Return [(pid, command)] of other processes holding `path` open that are
+    stuck in uninterruptible sleep.
+
+    Opening such a port in-process can freeze everything: pyserial's open()
+    calls termios.tcgetattr(), which CPython runs with the GIL held, and it
+    blocks behind the stuck holder -- GUI, every other port and the debugger
+    stop with it, and nothing inside the process can interrupt it. Checking
+    first (without touching the device) lets us refuse instead. Anything we
+    can't determine (no lsof, timeouts) counts as "not stuck" so a failed
+    check never blocks a normal open.
+    """
+    if sys.platform == 'win32':
+        return []
+
+    def run(cmd):
+        try:
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                 stderr=subprocess.DEVNULL, text=True)
+        except OSError:
+            return ''
+        try:
+            return p.communicate(timeout=timeout)[0]
+        except subprocess.TimeoutExpired:
+            p.kill()    # don't wait on it: a wedged helper may never die
+            return ''
+
+    def stuck():
+        pids = {int(t) for t in run(['lsof', '-t', path]).split() if t.isdigit()}
+        pids.discard(os.getpid())
+        if not pids:
+            return {}
+        found = {}
+        for line in run(['ps', '-o', 'pid=,stat=,command=',
+                         '-p', ','.join(map(str, pids))]).splitlines():
+            parts = line.split(None, 2)
+            if len(parts) == 3 and 'U' in parts[1]:
+                found[int(parts[0])] = parts[2]
+        return found
+
+    if not stuck():
+        return []
+    sleep(settle)       # a process in a brief, ordinary disk wait is not wedged
+    return sorted(stuck().items())
+
 
 class SerialPort(Port):
     # define signals
@@ -19,6 +75,7 @@ class SerialPort(Port):
     def __init__(self, name, hub=None):
         Port.__init__(self, name, name, hub)
         self.port = None
+        self._openLock = Lock()
         self.rate = 115200
 
     def run(self):
@@ -71,11 +128,34 @@ class SerialPort(Port):
                         traceback.print_exc(file=sys.stderr)
 
     def open(self, rate=None, thread=True, timeout=.01):
+        # One open at a time per port. A jammed device can leave an open
+        # blocked in the kernel for good; starting a second one on top of it
+        # just piles up more stuck threads (and races on self.port).
+        if not self._openLock.acquire(False):
+            raise ConnectionError(
+                '%s: an earlier open is still blocked (the device is not '
+                'responding); unplug and replug it' % self.name)
+        try:
+            self._open(rate, thread, timeout)
+        finally:
+            self._openLock.release()
+
+    def _open(self, rate, thread, timeout):
         if self.is_open():
             error("Already opened!")
         else:
             if rate:
                 self.rate = rate
+
+            stuck = stuckHolders(self.name)
+            if stuck:
+                pid, command = stuck[0]
+                words = command.split()
+                short = ' '.join([os.path.basename(words[0])] + words[1:])[:50]
+                raise ConnectionError(
+                    '%s is held by a stuck process (PID %d: %s) and opening it '
+                    'would freeze the whole app; unplug and replug the device, '
+                    'or reboot' % (self.name, pid, short))
 
             try:
                 self.port = serial.Serial(self.name,
@@ -120,13 +200,10 @@ class SerialPort(Port):
             sig.disconnect()
 
         if self.isOpen():
-            # flush() raises on a vanished device; it must not skip close(),
-            # or the dead fd stays open and can collide with the re-created
-            # device node on reconnect.
-            try:
-                self.port.flush()
-            except Exception:
-                pass
+            # No flush() here: pyserial implements it as termios.tcdrain(),
+            # which CPython runs with the GIL held, so on a device that has
+            # stopped draining (wedged/vanished USB serial) it freezes the
+            # whole process -- GUI, other ports and the debugger included.
             try:
                 self.port.close()
             except Exception:
